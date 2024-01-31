@@ -45,6 +45,8 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0 # Ensure all necessary commits are fetched
 
     - name: Setup GCP Authentication
       uses: google-github-actions/auth@v2
@@ -61,7 +63,7 @@ jobs:
     - name: Check for Changes in Functions
       run: |
         echo "Checking for changes in functions..."
-        CHANGED_FUNCS=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep '^functions/' | cut -d '/' -f 1-3 | uniq)
+        CHANGED_FUNCS=$(git diff --name-only HEAD~1 HEAD | grep '^functions/' | cut -d '/' -f 1-3 | uniq)
         if [ -z "$CHANGED_FUNCS" ]; then
           echo "No functions to deploy."
         else
