@@ -56,15 +56,26 @@ jobs:
       uses: google-github-actions/setup-gcloud@v2
       with:
         project_id: ${{ secrets.GCP_PROJECT_ID }}
-        install_components: "gcloud beta"
+#        install_components: "gcloud beta"
+
+    - name: Check for Changes in Functions
+      run: |
+        echo "Checking for changes in functions..."
+        CHANGED_FUNCS=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep '^functions/' | cut -d '/' -f 1-3 | uniq)
+        if [ -z "$CHANGED_FUNCS" ]; then
+          echo "No functions to deploy."
+        else
+          echo "CHANGED_FUNCS<<EOF" >> $GITHUB_ENV
+          echo "$CHANGED_FUNCS" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+        fi
 
     - name: Deploy Changed Functions
+      if: env.CHANGED_FUNCS
       run: |
-        CHANGED_DIRS=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep 'functions/' | cut -d '/' -f -3 | uniq)
-        for DIR in $CHANGED_DIRS; do
-          if [ -d "$DIR" ]; then
-            FUNCTION_NAME=$(basename $DIR)
-            # Add your deployment command here, e.g.:
-            echo "gcloud functions deploy $FUNCTION_NAME --trigger-http --runtime nodejs14 --source $DIR"
-          fi
+        for FUNC_PATH in $CHANGED_FUNCS; do
+          FUNCTION_NAME=$(basename $FUNC_PATH)
+          echo "Deploying $FUNCTION_NAME..."
+          # Your deployment command here, e.g.,
+          echo "gcloud functions deploy $FUNCTION_NAME --trigger-http --runtime nodejs14 --source $DIR"
         done
