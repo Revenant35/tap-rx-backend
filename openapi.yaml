@@ -1,8 +1,0 @@
-securityDefinitions:
-  auth0_jwt:
-    authorizationUrl: "https://dev-yg38dkcvqkoi1ekn.us.auth0.com/authorize"
-    flow: "implicit"
-    type: "oauth2"
-    x-google-issuer: "https://dev-yg38dkcvqkoi1ekn.us.auth0.com/"
-    x-google-jwks_uri: "https://dev-yg38dkcvqkoi1ekn.us.auth0.com/.well-known/jwks.json"
-    x-google-audiences: "https://tap-rx/"

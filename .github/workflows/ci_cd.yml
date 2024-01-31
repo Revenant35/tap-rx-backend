@@ -1,0 +1,61 @@
+name: CI/CD Workflow
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  terraform-deploy:
+    name: Terraform Deployment
+    runs-on: ubuntu-latest
+    outputs:
+      terraform_changes: ${{ steps.check_changes.outputs.terraform_changes }}
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Check for Terraform Changes
+      id: check_changes
+      run: |
+        echo "Checking for changes in Terraform files..."
+        if git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep 'terraform/'; then
+          echo "::set-output name=terraform_changes::true"
+        else
+          echo "::set-output name=terraform_changes::false"
+        fi
+
+    - name: Terraform Init and Apply
+      if: steps.check_changes.outputs.terraform_changes == 'true'
+      run: |
+        cd terraform
+        echo "terraform init"
+        echo "terraform apply -auto-approve"
+      env:
+        GOOGLE_CLOUD_PROJECT: ${{ secrets.GCP_PROJECT_ID }}
+
+  function-deploy:
+    name: Cloud Functions Deployment
+    needs: terraform-deploy
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@v0.2.0
+      with:
+        project_id: ${{ secrets.GCP_PROJECT_ID }}
+        service_account_key: ${{ secrets.GCP_SA_KEY }}
+        export_default_credentials: true
+
+    - name: Deploy Changed Functions
+      run: |
+        CHANGED_DIRS=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep 'functions/' | cut -d '/' -f -3 | uniq)
+        for DIR in $CHANGED_DIRS; do
+          if [ -d "$DIR" ]; then
+            FUNCTION_NAME=$(basename $DIR)
+            # Add your deployment command here, e.g.:
+            echo "gcloud functions deploy $FUNCTION_NAME --trigger-http --runtime nodejs14 --source $DIR"
+          fi
+        done
