@@ -20,13 +20,13 @@ jobs:
       run: |
         echo "Checking for changes in Terraform files..."
         if git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep 'terraform/'; then
-          echo "::set-output name=terraform_changes::true"
+          echo "terraform_changes=true" >> $GITHUB_ENV
         else
-          echo "::set-output name=terraform_changes::false"
+          echo "terraform_changes=false" >> $GITHUB_ENV
         fi
 
     - name: Terraform Init and Apply
-      if: steps.check_changes.outputs.terraform_changes == 'true'
+      if: env.terraform_changes == 'true'
       run: |
         cd terraform
         echo "terraform init"
@@ -40,7 +40,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: Set up Cloud SDK
       uses: google-github-actions/setup-gcloud@v0.3.0
