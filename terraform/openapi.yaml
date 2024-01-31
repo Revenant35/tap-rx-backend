@@ -20,3 +20,26 @@ paths:
           description: A successful response
           schema:
             type: string
+  /register:
+    get:
+      summary: Register a user for TapRx
+      operationId: register
+      x-google-backend:
+        address: https://us-central1-taprx-9c82f.cloudfunctions.net/register_user_function
+      responses:
+        '200':
+          description: "Success."
+          schema:
+            type: string
+        '400':
+          description: "An element in the JSON request is missing or invalid."
+          schema:
+            type: string
+securityDefinitions:
+  auth0_jwt:
+    authorizationUrl: "https://dev-yg38dkcvqkoi1ekn.us.auth0.com/authorize"
+    flow: "implicit"
+    type: "oauth2"
+    x-google-issuer: "https://dev-yg38dkcvqkoi1ekn.us.auth0.com/"
+    x-google-jwks_uri: "https://dev-yg38dkcvqkoi1ekn.us.auth0.com/.well-known/jwks.json"
+    x-google-audiences: "https://tap-rx/"

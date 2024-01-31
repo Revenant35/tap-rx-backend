@@ -35,65 +35,52 @@ provider "google-beta" {
   zone    = var.zone
 }
 
+resource "google_kms_key_ring" "terraform_state" {
+  name     = "${random_id.bucket_prefix.hex}-bucket-tfstate"
+  location = "us"
+}
+
+resource "google_kms_crypto_key" "terraform_state_bucket" {
+  name            = "test-terraform-state-bucket"
+  key_ring        = google_kms_key_ring.terraform_state.id
+  rotation_period = "86400s"
+
+  lifecycle {
+    prevent_destroy = false
+  }
+}
+
+data "google_project" "project" {
+}
+
+resource "google_project_iam_member" "default" {
+  project = data.google_project.project.project_id
+  role    = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
+  member  = "serviceAccount:service-1061539834893@gs-project-accounts.iam.gserviceaccount.com"
+}
+
+resource "random_id" "bucket_prefix" {
+  byte_length = 8
+}
+
+resource "google_storage_bucket" "default" {
+  name          = "${random_id.bucket_prefix.hex}-bucket-tfstate"
+  force_destroy = false
+  location      = "US"
+  storage_class = "STANDARD"
+  versioning {
+    enabled = true
+  }
+  encryption {
+    default_kms_key_name = google_kms_crypto_key.terraform_state_bucket.id
+  }
+  depends_on = [
+    google_project_iam_member.default
+  ]
+}
+
 resource "google_storage_bucket" "bucket" {
   name                        = "${var.project}-gcf-source"
   location                    = "US"
   uniform_bucket_level_access = true
-}
-
-resource "google_storage_bucket_object" "hello_world_gcf_object" {
-  name   = "hello_world_function"
-  bucket = google_storage_bucket.bucket.name
-  source = "../functions/hello_world_function/hello_world_function-source.zip"
-}
-
-resource "google_cloudfunctions2_function" "hello_world_function" {
-  name        = "hello_world_function"
-  location    = var.region
-  description = "Example function"
-
-  build_config {
-    runtime     = "python311"
-    entry_point = "hello_get"
-    source {
-      storage_source {
-        bucket = google_storage_bucket.bucket.name
-        object = google_storage_bucket_object.hello_world_gcf_object.name
-      }
-    }
-  }
-
-  service_config {
-    max_instance_count = 1
-    available_memory   = "256M"
-    timeout_seconds    = 60
-  }
-}
-
-resource "google_api_gateway_api" "api" {
-  provider     = google-beta
-  api_id       = "tap-rx-api"
-  display_name = "tap-rx-api"
-}
-
-resource "google_api_gateway_api_config" "api_config" {
-  provider     = google-beta
-  api          = google_api_gateway_api.api.api_id
-  display_name = "tap-rx-api-config"
-  openapi_documents {
-    document {
-      path     = "openapi.yaml"
-      contents = filebase64("openapi.yaml")
-    }
-  }
-  lifecycle {
-    create_before_destroy = true
-  }
-}
-
-resource "google_api_gateway_gateway" "api_gw" {
-  provider     = google-beta
-  api_config   = google_api_gateway_api_config.api_config.id
-  gateway_id   = "tap-rx-api-gateway"
-  display_name = "tap-rx-api-gateway"
 }
