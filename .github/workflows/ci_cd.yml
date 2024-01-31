@@ -14,14 +14,18 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0 # Ensure all necessary commits are fetched
 
     - name: Check for Terraform Changes
       id: check_changes
       run: |
         echo "Checking for changes in Terraform files..."
-        if git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep 'terraform/'; then
+        if git diff --name-only HEAD~1 HEAD | grep 'terraform/'; then
+          echo "Changes found in Terraform files"
           echo "terraform_changes=true" >> $GITHUB_ENV
         else
+          echo "No changes found in Terraform files"
           echo "terraform_changes=false" >> $GITHUB_ENV
         fi
 
@@ -42,12 +46,17 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
+    - name: Setup GCP Authentication
+      uses: google-github-actions/auth@v2
+      with:
+        credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+
     - name: Set up Cloud SDK
       uses: google-github-actions/setup-gcloud@v2
       with:
         project_id: ${{ secrets.GCP_PROJECT_ID }}
-        service_account_key: ${{ secrets.GCP_SA_KEY }}
-        export_default_credentials: true
+        install_components: "gcloud beta"
 
     - name: Deploy Changed Functions
       run: |
