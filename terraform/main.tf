@@ -23,6 +23,10 @@ variable "zone" {
   type    = string
   default = "us-central1-c"
 }
+variable "firebase_database_url" {
+  type    = string
+  default = "https://taprx-9c82f-default-rtdb.firebaseio.com"
+}
 
 provider "google" {
   project = var.project

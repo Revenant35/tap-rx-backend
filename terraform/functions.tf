@@ -53,5 +53,16 @@ resource "google_cloudfunctions2_function" "register_user_function" {
     max_instance_count = 1
     available_memory   = "256M"
     timeout_seconds    = 60
+
+    environment_variables = {
+      FIREBASE_DATABASE_URL = var.firebase_database_url
+    }
+
+    secret_environment_variables {
+      key        = "FIREBASE_DATABASE_KEY"
+      project_id = var.project
+      secret     = "firebase-database-key"
+      version    = "latest"
+    }
   }
 }

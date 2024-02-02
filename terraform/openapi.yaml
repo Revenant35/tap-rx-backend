@@ -21,7 +21,7 @@ paths:
           schema:
             type: string
   /register:
-    get:
+    post:
       summary: Register a user for TapRx
       operationId: register
       x-google-backend:
@@ -33,6 +33,10 @@ paths:
             type: string
         '400':
           description: "An element in the JSON request is missing or invalid."
+          schema:
+            type: string
+        '500':
+          description: "Internal server error."
           schema:
             type: string
 securityDefinitions:
