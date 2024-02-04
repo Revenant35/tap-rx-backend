@@ -6,6 +6,7 @@ import flask
 import pytest
 
 from functions.register_user_function import main
+from functions.register_user_function.localpackage import register_user
 
 FIREBASE_KEY = "FIREBASE_DATABASE_KEY"
 FIREBASE_DATABASE_URL = "FIREBASE_DATABASE_URL"
@@ -35,9 +36,9 @@ def test_register_user_handler_when_store_succeeds_returns_200():
     with patch('flask.Request.get_json', return_value=request_json), \
             patch('functions.register_user_function.main.get_env_var', side_effect=[fb_key_env, fb_db_url_env]), \
             patch('json.loads', return_value={'key': 'value'}), \
-            patch('functions.register_user_function.main.initialize_firebase_app', return_value=None), \
+            patch('functions.register_user_function.localpackage.register_user.initialize_firebase_app', return_value=None), \
             patch('firebase_admin.db.reference', return_value=mock_db_user_ref), \
-            patch('functions.register_user_function.main.store_user', return_value=None):
+            patch('functions.register_user_function.localpackage.register_user.store_user', return_value=None):
         response = main.register_user_handler(request)
         assert response == ("OK", 200)
 
@@ -162,7 +163,7 @@ def test_register_user_handler_when_initializing_app_fails_return_500():
     with patch('flask.Request.get_json', return_value=request_json), \
             patch('functions.register_user_function.main.get_env_var', side_effect=[fb_key_env, fb_db_url_env]), \
             patch('json.loads', return_value={'key': 'value'}), \
-            patch('functions.register_user_function.main.initialize_firebase_app', side_effect=ValueError("test")):
+            patch('functions.register_user_function.localpackage.register_user.initialize_firebase_app', side_effect=ValueError("test")):
         response = main.register_user_handler(request)
         assert response == ("Internal server error", 500)
 
@@ -191,7 +192,7 @@ def test_register_user_handler_when_db_ref_is_invalid_return_500():
     with patch('flask.Request.get_json', return_value=request_json), \
             patch('functions.register_user_function.main.get_env_var', side_effect=[fb_key_env, fb_db_url_env]), \
             patch('json.loads', return_value={'key': 'value'}), \
-            patch('functions.register_user_function.main.initialize_firebase_app', return_value=None), \
+            patch('functions.register_user_function.localpackage.register_user.initialize_firebase_app', return_value=None), \
             patch('firebase_admin.db.reference', side_effect=ValueError("test")):
         response = main.register_user_handler(request)
         assert response == ("Internal server error", 500)
@@ -221,11 +222,42 @@ def test_register_user_handler_when_store_fails_return_500():
     with patch('flask.Request.get_json', return_value=request_json), \
             patch('functions.register_user_function.main.get_env_var', side_effect=[fb_key_env, fb_db_url_env]), \
             patch('json.loads', return_value={'key': 'value'}), \
-            patch('functions.register_user_function.main.initialize_firebase_app', return_value=None), \
+            patch('functions.register_user_function.localpackage.register_user.initialize_firebase_app', return_value=None), \
             patch('firebase_admin.db.reference', return_value=mock_db_user_ref), \
-            patch('functions.register_user_function.main.store_user', side_effect=ValueError("test")):
+            patch('functions.register_user_function.localpackage.register_user.store_user', side_effect=ValueError("test")):
         response = main.register_user_handler(request)
         assert response == ("Internal server error", 500)
+
+
+def test_register_user_handler_when_user_already_exists_return_409():
+    username = "test_user"
+    first_name = "John"
+    last_name = "Doe"
+    email = "john.doe@example.com"
+    phone = "123-456-7890"
+
+    request_json = {
+        "username": username,
+        "first_name": first_name,
+        "last_name": last_name,
+        "email": email,
+        "phone": phone
+    }
+
+    request = flask.Request(request_json)
+
+    fb_key_env = "{'key': 'value'}"
+    fb_db_url_env = "test_url"
+    mock_db_user_ref = MagicMock()
+
+    with patch('flask.Request.get_json', return_value=request_json), \
+            patch('functions.register_user_function.main.get_env_var', side_effect=[fb_key_env, fb_db_url_env]), \
+            patch('json.loads', return_value={'key': 'value'}), \
+            patch('functions.register_user_function.localpackage.register_user.initialize_firebase_app', return_value=None), \
+            patch('firebase_admin.db.reference', return_value=mock_db_user_ref), \
+            patch('functions.register_user_function.localpackage.register_user.store_user', side_effect=register_user.UserAlreadyExistsError()):
+        response = main.register_user_handler(request)
+        assert response == ("User already exists", 409)
 
 
 def test_store_user_when_store_succeeds_returns_none():
@@ -237,7 +269,9 @@ def test_store_user_when_store_succeeds_returns_none():
 
     mock_db_user_ref = MagicMock()
     mock_db_user_ref.child(username).set.return_value = None
-    main.store_user(mock_db_user_ref, username, first_name, last_name, email, phone)
+
+    with patch('functions.register_user_function.localpackage.register_user.check_user_exists', return_value=False):
+        register_user.store_user(mock_db_user_ref, username, first_name, last_name, email, phone)
 
     mock_db_user_ref.child(username).set.assert_called_once_with({
         "first_name": first_name,
@@ -254,6 +288,20 @@ def test_store_user_when_store_succeeds_returns_none():
     mock_db_user_ref.child(username).set.assert_called_once()
 
 
+def test_store_user_when_user_already_exists_raises_user_already_exists_error():
+    username = "test_user"
+    first_name = "John"
+    last_name = "Doe"
+    email = "john.doe@example.com"
+    phone = "123-456-7890"
+
+    mock_db_user_ref = MagicMock()
+    mock_db_user_ref.child(username).set.return_value = MagicMock()
+    with patch('functions.register_user_function.localpackage.register_user.check_user_exists', return_value=True):
+        with pytest.raises(register_user.UserAlreadyExistsError):
+            register_user.store_user(mock_db_user_ref, username, first_name, last_name, email, phone)
+
+
 def test_store_user_when_firebase_fails_raises_firebase_error():
     username = "test_user"
     first_name = "John"
@@ -264,8 +312,9 @@ def test_store_user_when_firebase_fails_raises_firebase_error():
     mock_db_user_ref = MagicMock()
     mock_db_user_ref.child(username).set.side_effect = firebase_admin.exceptions.FirebaseError(8, "test")
 
-    with pytest.raises(firebase_admin.exceptions.FirebaseError):
-        main.store_user(mock_db_user_ref, username, first_name, last_name, email, phone)
+    with patch('functions.register_user_function.localpackage.register_user.check_user_exists', return_value=False):
+        with pytest.raises(firebase_admin.exceptions.FirebaseError):
+            register_user.store_user(mock_db_user_ref, username, first_name, last_name, email, phone)
 
 
 def test_store_user_when_child_is_invalid_raises_value_error():
@@ -277,9 +326,9 @@ def test_store_user_when_child_is_invalid_raises_value_error():
 
     mock_db_user_ref = MagicMock()
     mock_db_user_ref.child(username).set.side_effect = ValueError("test")
-
-    with pytest.raises(ValueError):
-        main.store_user(mock_db_user_ref, username, first_name, last_name, email, phone)
+    with patch('functions.register_user_function.localpackage.register_user.check_user_exists', return_value=False):
+        with pytest.raises(ValueError):
+            register_user.store_user(mock_db_user_ref, username, first_name, last_name, email, phone)
 
 
 def test_initialize_firebase_app_when_initialize_succeeds_returns_none():
@@ -292,7 +341,7 @@ def test_initialize_firebase_app_when_initialize_succeeds_returns_none():
             patch('firebase_admin.initialize_app', return_value=None) as mock_init_app:
         mock_apps.__bool__.return_value = False
 
-        main.initialize_firebase_app(mock_fb_key_dict, mock_fb_db_url)
+        register_user.initialize_firebase_app(mock_fb_key_dict, mock_fb_db_url)
         mock_init_app.assert_called_once_with(mock_cred, {
             "databaseURL": mock_fb_db_url
         })
@@ -308,7 +357,7 @@ def test_initialize_firebase_app_when_app_already_exists_returns_none():
             patch('firebase_admin.initialize_app', return_value=None) as mock_init_app:
         mock_apps.__bool__.return_value = True
 
-        main.initialize_firebase_app(mock_fb_key_dict, mock_fb_db_url)
+        register_user.initialize_firebase_app(mock_fb_key_dict, mock_fb_db_url)
         mock_init_app.assert_not_called()
 
 
@@ -320,7 +369,7 @@ def test_initialize_firebase_app_when_certificate_cant_be_read_raise_io_error():
             patch('firebase_admin.credentials.Certificate', side_effect=IOError("test")):
         mock_apps.__bool__.return_value = False
         with pytest.raises(IOError):
-            main.initialize_firebase_app(mock_fb_key_dict, mock_fb_db_url)
+            register_user.initialize_firebase_app(mock_fb_key_dict, mock_fb_db_url)
 
 
 def test_initialize_firebase_app_when_certificate_is_invalid_raise_value_error():
@@ -331,7 +380,7 @@ def test_initialize_firebase_app_when_certificate_is_invalid_raise_value_error()
             patch('firebase_admin.credentials.Certificate', side_effect=ValueError("test")):
         mock_apps.__bool__.return_value = False
         with pytest.raises(ValueError):
-            main.initialize_firebase_app(mock_fb_key_dict, mock_fb_db_url)
+            register_user.initialize_firebase_app(mock_fb_key_dict, mock_fb_db_url)
 
 
 def test_initialize_firebase_app_when_app_is_invalid_or_already_exists_raise_value_error():
@@ -344,7 +393,7 @@ def test_initialize_firebase_app_when_app_is_invalid_or_already_exists_raise_val
             patch('firebase_admin.initialize_app', side_effect=ValueError("test")):
         mock_apps.__bool__.return_value = False
         with pytest.raises(ValueError):
-            main.initialize_firebase_app(mock_fb_key_dict, mock_fb_db_url)
+            register_user.initialize_firebase_app(mock_fb_key_dict, mock_fb_db_url)
 
 
 def test_get_env_var_when_var_is_set_returns_var_value(monkeypatch):

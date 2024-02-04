@@ -35,10 +35,16 @@ paths:
           description: "An element in the JSON request is missing or invalid."
           schema:
             type: string
+        '409':
+          description: "The user already exists."
+          schema:
+            type: string
         '500':
           description: "Internal server error."
           schema:
             type: string
+      security:
+        - auth0_jwt: [ ]
 securityDefinitions:
   auth0_jwt:
     authorizationUrl: "https://dev-yg38dkcvqkoi1ekn.us.auth0.com/authorize"
