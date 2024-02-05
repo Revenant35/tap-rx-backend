@@ -6,7 +6,7 @@ import firebase_admin
 import firebase_admin.exceptions
 import flask
 import functions_framework
-from firebase_admin import db
+from firebase_admin import db, auth
 from .localpackage import register_user
 
 FIREBASE_KEY = "FIREBASE_DATABASE_KEY"
@@ -24,15 +24,14 @@ def register_user_handler(request: flask.request):
         Response that can be converted into a flask.Response object.
     """
 
-    # TODO: Authenticate user with Auth0 before registering the user in the database.
-
     try:
         request_json = request.get_json(silent=True)
-        username = request_json["username"]
+        user_id = request_json["user_id"]
         first_name = request_json["first_name"]
         last_name = request_json["last_name"]
-        email = request_json["email"]
-        phone = request_json["phone"]
+
+        # Not required for registration
+        phone = request_json.get("phone", None)
     except (ValueError, TypeError, KeyError) as ex:
         logging.error(f"Invalid request JSON: {ex}")
         return "Invalid request", 400
@@ -56,19 +55,57 @@ def register_user_handler(request: flask.request):
         return "Internal server error", 500
 
     try:
+        user = verify_firebase_id_token(request)
+        requester_user_id = user['user_id']
+    except ValueError:
+        return "Authorization header not present", 401
+    except firebase_admin.auth.InvalidIdTokenError:
+        return "Invalid or expired Firebase ID token", 403
+
+    if user_id != requester_user_id:
+        return "Insufficient permissions", 403
+
+    try:
         db_users_ref = db.reference("/users")
     except ValueError as ex:
         logging.error(f"Invalid database reference: {ex}")
         return "Internal server error", 500
 
     try:
-        register_user.store_user(db_users_ref, username, first_name, last_name, email, phone)
+        register_user.store_user(db_users_ref, user_id, first_name, last_name, phone)
     except (ValueError, TypeError, firebase_admin.exceptions.FirebaseError):
         return "Internal server error", 500
     except register_user.UserAlreadyExistsError:
         return "User already exists", 409
 
     return "OK", 200
+
+
+def verify_firebase_id_token(request: flask.request):
+    """
+    Verify the Firebase ID token in the request header and return the decoded token.
+    Args:
+        request: flask request object.
+
+    Returns:
+        The decoded token.
+
+    Raises:
+        ValueError: If the client authorization header is not present.
+        firebase_admin.exceptions.FirebaseError: If an error occurs while verifying the token.
+    """
+    authorization_header = request.headers.get('X-Forwarded-Authorization')
+    if not authorization_header:
+        logging.error("No client authorization header.")
+        raise ValueError("No client authorization header.")
+
+    id_token = authorization_header.split('Bearer ')[1]
+    try:
+        decoded_token = auth.verify_id_token(id_token)
+        return decoded_token
+    except Exception as e:
+        logging.error(f'Error verifying Firebase ID token: {e}')
+        raise firebase_admin.auth.InvalidIdTokenError(f'Error verifying Firebase ID token: {e}')
 
 
 def get_env_var(env_var_name: str) -> str:

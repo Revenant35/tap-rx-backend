@@ -44,12 +44,12 @@ paths:
           schema:
             type: string
       security:
-        - auth0_jwt: [ ]
+        - firebase: [ ]
 securityDefinitions:
-  auth0_jwt:
-    authorizationUrl: "https://dev-yg38dkcvqkoi1ekn.us.auth0.com/authorize"
+  firebase:
+    authorizationUrl: ""
     flow: "implicit"
     type: "oauth2"
-    x-google-issuer: "https://dev-yg38dkcvqkoi1ekn.us.auth0.com/"
-    x-google-jwks_uri: "https://dev-yg38dkcvqkoi1ekn.us.auth0.com/.well-known/jwks.json"
-    x-google-audiences: "https://tap-rx/"
+    x-google-issuer: "https://securetoken.google.com/taprx-9c82f"
+    x-google-jwks_uri: "https://www.googleapis.com/service_accounts/v1/metadata/x509/securetoken@system.gserviceaccount.com"
+    x-google-audiences: "taprx-9c82f"
