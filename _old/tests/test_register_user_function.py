@@ -5,7 +5,7 @@ import firebase_admin
 import flask
 import pytest
 
-from functions.register_user_function import main
+from _old.functions.register_user_function import main
 from functions.register_user_function.localpackage import register_user
 
 FIREBASE_KEY = "FIREBASE_DATABASE_KEY"
