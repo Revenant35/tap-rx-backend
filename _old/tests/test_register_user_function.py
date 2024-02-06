@@ -6,7 +6,7 @@ import flask
 import pytest
 
 from _old.functions.register_user_function import main
-from functions.register_user_function.localpackage import register_user
+from _old.functions.register_user_function.localpackage import register_user
 
 FIREBASE_KEY = "FIREBASE_DATABASE_KEY"
 FIREBASE_DATABASE_URL = "FIREBASE_DATABASE_URL"
