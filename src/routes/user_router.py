@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify
-from auth import firebase_auth_required
+from src.routes.auth import firebase_auth_required
 
 users_bp = Blueprint('users_bp', __name__)
 
