@@ -1,7 +1,8 @@
 from functools import wraps
-from flask import request, jsonify
+
 import firebase_admin
 from firebase_admin import auth
+from flask import request, jsonify
 
 
 def firebase_auth_required(f):
@@ -13,11 +14,7 @@ def firebase_auth_required(f):
         if 'Authorization' not in request.headers:
             return jsonify({"message": "Authorization header is missing"}), 401
 
-        split_token = request.headers['Authorization'].split(' ')
-        if len(split_token) != 2 or split_token[0] != 'Bearer' or not split_token[1]:
-            return jsonify({"message": "Invalid token format"}), 400
-
-        id_token = split_token[1]
+        id_token = request.headers['Authorization']
 
         try:
             decoded_token = auth.verify_id_token(id_token)

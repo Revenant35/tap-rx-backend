@@ -1,10 +1,9 @@
-import firebase_admin
-from firebase_admin import firestore
+from firebase_admin import db, exceptions
+from flask import current_app
 
-if not firebase_admin._apps:
-    raise ValueError("Firebase app is not initialized")
-
-db = firestore.client()
+""" commenting out the following as it is causing imports of this file to fail. """
+# if not firebase_admin._apps:
+#     raise ValueError("Firebase app is not initialized")
 
 
 def add_document(collection_name, document_data):
@@ -87,3 +86,53 @@ def delete_document(collection_name, doc_id, transaction=None):
         transaction.delete(doc_ref)
     else:
         doc_ref.delete()
+
+
+def add_node(db_ref: db.Reference, node_name: str, node_data: dict):
+    """
+    Add a new node to the specified reference
+    Args:
+        db_ref: (firebase_admin.db.Reference) The reference to add the node to
+        node_name: (str) The name of the node to add
+        node_data: (dict) The data to be added to the node
+
+    Returns:
+        None
+
+    Raises:
+        ValueError: If the node name or data is invalid
+        TypeError: If the node data is not a dictionary
+        firebase_admin.exceptions.FirebaseError: If an error occurs while interacting with the database
+    """
+    try:
+        current_app.logger.info(f"Adding node {node_name} to the database.")
+        db_ref.child(node_name).set(node_data)
+    except (ValueError, TypeError) as ex:
+        current_app.logger.error(f"Node {node_name} is invalid: {ex}")
+        raise ex
+    except exceptions.FirebaseError as ex:
+        current_app.logger.error(f"Firebase failure while trying to add node {node_name}: {ex}")
+        raise ex
+
+
+def get_node(db_ref: db.Reference, node_name: str) -> dict or None:
+    """
+    Get a node from the specified reference
+    Args:
+        db_ref: (firebase_admin.db.Reference) The reference to get the node from
+        node_name: (str) The name of the node to get
+
+    Returns:
+        The node data if the node exists, otherwise None
+    """
+    try:
+        current_app.logger.info(f"Retrieving node {node_name} from the database.")
+        node = db_ref.child(node_name).get()
+    except ValueError as ex:
+        current_app.logger.error(f"Node {node_name} is invalid: {ex}")
+        raise ex
+    except exceptions.FirebaseError as ex:
+        current_app.logger.error(f"Firebase failure while trying to retrieve node {node_name}: {ex}")
+        raise ex
+
+    return node if node else None
