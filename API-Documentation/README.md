@@ -1,5 +1,11 @@
 # API Documentation
 API Documentation for TapRx's API located at `https://taprx.xyz/`
+## Table of Contents
+- [User Management](#user-management)
+  - [Create User](#create-user)
+  - [Update User](#update-user)
+
+# User Management
 ## Create User:
 Creates a new user with the provided user metadata.
 - ### URL
