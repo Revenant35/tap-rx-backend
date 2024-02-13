@@ -140,3 +140,30 @@ def get_node(db_ref: db.Reference, node_name: str) -> dict or None:
         raise ex
 
     return node if node else None
+
+
+def update_node(db_ref: db.Reference, node_name: str, updated_data) -> None:
+    """
+    Update a node in the specified reference
+    Args:
+        db_ref: (firebase_admin.db.Reference) The reference to update the node in
+        node_name: (str) The name of the node to update
+        updated_data: (dict) The data to update the node with
+
+    Returns:
+        None
+
+    Raises:
+        ValueError: If the node name or data is invalid
+        TypeError: If the node data is not a dictionary
+        firebase_admin.exceptions.FirebaseError: If an error occurs while interacting with the database
+    """
+    try:
+        current_app.logger.info(f"Updating node {node_name} in the database.")
+        db_ref.child(node_name).update(updated_data)
+    except (ValueError, TypeError) as ex:
+        current_app.logger.error(f"Node {node_name} is invalid: {ex}")
+        raise ex
+    except exceptions.FirebaseError as ex:
+        current_app.logger.error(f"Firebase failure while trying to update node {node_name}: {ex}")
+        raise ex
