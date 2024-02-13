@@ -124,6 +124,10 @@ def get_node(db_ref: db.Reference, node_name: str) -> dict or None:
 
     Returns:
         The node data if the node exists, otherwise None
+
+    Raises:
+        ValueError: If the node name is invalid
+        firebase_admin.exceptions.FirebaseError: If an error occurs while interacting with the database
     """
     try:
         current_app.logger.info(f"Retrieving node {node_name} from the database.")
