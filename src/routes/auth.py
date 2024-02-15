@@ -1,8 +1,10 @@
 from functools import wraps
+from typing import Optional
 
 import firebase_admin
+import flask
 from firebase_admin import auth
-from flask import request, jsonify
+from flask import request, jsonify, Response, current_app
 
 
 def firebase_auth_required(f):
@@ -28,3 +30,27 @@ def firebase_auth_required(f):
 
         return f(*args, **kwargs)
     return decorated_function
+
+
+def verify_user(user_id: str, request: flask.Request) -> tuple[bool, Optional[tuple[Response, int]]]:
+    """
+    Verifies that the user making the request is the same as the user being requested.
+
+    Args:
+        user_id: (str) Username for user.
+        request: (flask.Request) The request object.
+
+    Returns:
+        bool: True if the user is verified, otherwise False.
+    """
+    try:
+        requesting_user_id = request.decoded_token['user_id']
+    except (AttributeError, KeyError, ValueError) as ex:
+        current_app.logger.error(f"Invalid request JSON: {ex}")
+        return False, (jsonify({"message": "Invalid request"}), 400)
+
+    if user_id != requesting_user_id:
+        current_app.logger.error(f"Insufficient permissions: {requesting_user_id} != {user_id}")
+        return False, (jsonify({"message": "Insufficient permissions"}), 403)
+    else:
+        return True, None

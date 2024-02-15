@@ -74,10 +74,16 @@ def create_user(user_id: str, user_json_dict: dict) -> User:
     Raises:
         InvalidRequestError: If the request is invalid.
         UserAlreadyExistsError: If the user already exists.
-        ValueError, TypeError, exceptions.FirebaseError: If an error occurs while trying to store the user.
+        ValueError, TypeError: If an error occurs while trying to store the user.
+        exceptions.FirebaseError: If an error occurs while interacting with the database.
     """
 
-    user_data = db.reference(f"/users/{user_id}").get()
+    try:
+        user_data = db.reference(f"/users/{user_id}").get()
+    except exceptions.FirebaseError as ex:
+        current_app.logger.error(f"Firebase failure while trying to retrieve user {user_id}: {ex}")
+        raise ex
+
     if user_data is not None:
         current_app.logger.error(f"User {user_id} already exists")
         raise UserAlreadyExistsError
@@ -86,8 +92,10 @@ def create_user(user_id: str, user_json_dict: dict) -> User:
         first_name = user_json_dict["first_name"]
         last_name = user_json_dict["last_name"]
         phone = user_json_dict.get("phone", None)
+        medications = user_json_dict.get("medications", [])
         dependents = user_json_dict.get("dependents", [])
-        guardians = user_json_dict.get("guardians", [])
+        monitoring_users = user_json_dict.get("monitoring_users", [])
+        monitored_by_users = user_json_dict.get("monitored_by_users", [])
     except (ValueError, KeyError) as ex:
         current_app.logger.error(f"Invalid request JSON: {ex}")
         raise InvalidRequestError
@@ -97,20 +105,25 @@ def create_user(user_id: str, user_json_dict: dict) -> User:
         first_name=first_name,
         last_name=last_name,
         phone=phone,
+        medications=medications,
         dependents=dependents,
-        guardians=guardians
+        monitoring_users=monitoring_users,
+        monitored_by_users=monitored_by_users
     )
 
     try:
         db.reference(f"/users/{user_id}").set(new_user.to_dict())
-    except (ValueError, TypeError, exceptions.FirebaseError) as ex:
-        current_app.logger.error(f"Node {user_id} is invalid: {ex}")
+    except (ValueError, TypeError) as ex:
+        current_app.logger.error(f"Error while trying to store user {user_id}: {ex}")
+        raise ex
+    except exceptions.FirebaseError as ex:
+        current_app.logger.error(f"Firebase failure while trying to store user {user_id}: {ex}")
         raise ex
 
     return new_user
 
 
-def update_user(user_id: str, user_json_dict: dict) -> User:
+def update_user(user_id: str, user_json_dict: dict) -> dict:
     """
     Updates an existing user in the database.
 
@@ -119,44 +132,43 @@ def update_user(user_id: str, user_json_dict: dict) -> User:
         user_json_dict: (dict) Dictionary containing user data to be updated.
 
     Returns:
-        User: The updated user.
+        dict: The user data that was updated.
 
     Raises:
         UserNotFoundError: If the user is not found.
-        ValueError, TypeError, exceptions.FirebaseError: If an error occurs while trying to update the user.
+        ValueError, TypeError: If an error occurs while trying to update the user.
+        exceptions.FirebaseError: If an error occurs while interacting with the database.
     """
-    user_data = db.reference(f"/users/{user_id}").get()
+    try:
+        user_data = db.reference(f"/users/{user_id}").get()
+    except exceptions.FirebaseError as ex:
+        current_app.logger.error(f"Firebase failure while trying to retrieve user {user_id}: {ex}")
+        raise ex
+
     if user_data is None:
-        current_app.logger.error(f"User {user_id} not exists")
+        current_app.logger.error(f"User {user_id} does not exist")
         raise UserNotFoundError
 
-    user = User.from_dict(user_data)
-
+    updated_user_data = {}
     try:
-        first_name = user_json_dict.get("first_name", None)
-        last_name = user_json_dict.get("last_name", None)
-        phone = user_json_dict.get("phone", None)
-        dependents = user_json_dict.get("dependents", [])
-        guardians = user_json_dict.get("guardians", [])
+        keys_to_copy = [
+            "first_name", "last_name", "phone", "medications", "dependents", "monitoring_users", "monitored_by_users"
+        ]
+        for key in keys_to_copy:
+            value = user_json_dict.get(key)
+            if value is not None:
+                updated_user_data[key] = value
     except (ValueError, KeyError) as ex:
         current_app.logger.error(f"Invalid request JSON: {ex}")
         raise InvalidRequestError
 
-    if first_name:
-        user.first_name = first_name
-    if last_name:
-        user.last_name = last_name
-    if phone:
-        user.phone = phone
-    if dependents:
-        user.dependents = dependents
-    if guardians:
-        user.guardians = guardians
-
     try:
-        db.reference(f"/users/{user_id}").set(user.to_dict())
-    except (ValueError, TypeError, exceptions.FirebaseError) as ex:
+        db.reference(f"/users/{user_id}").update(updated_user_data)
+    except (ValueError, TypeError) as ex:
         current_app.logger.error(f"Node {user_id} is invalid: {ex}")
         raise ex
+    except exceptions.FirebaseError as ex:
+        current_app.logger.error(f"Firebase failure while trying to update user {user_id}: {ex}")
+        raise ex
 
-    return user
+    return updated_user_data

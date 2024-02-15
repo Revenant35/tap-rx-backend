@@ -1,11 +1,11 @@
-from firebase_admin import db, exceptions
+from firebase_admin import exceptions
 from flask import Blueprint, current_app, jsonify, request
 
+from src.controllers.user_controller import get_users, update_user, create_user, get_user
 from src.models.errors.invalid_request_error import InvalidRequestError
 from src.models.errors.user_already_exists_error import UserAlreadyExistsError
 from src.models.errors.user_not_found_error import UserNotFoundError
-from src.controllers.user_controller import get_users, update_user, create_user, get_user
-from src.routes.auth import firebase_auth_required
+from src.routes.auth import firebase_auth_required, verify_user
 
 users_bp = Blueprint('users_bp', __name__)
 
@@ -37,15 +37,9 @@ def handle_get_users():
 @users_bp.route('/<user_id>', methods=['GET'])
 @firebase_auth_required
 def handle_get_user(user_id):
-    try:
-        requesting_user_id = request.decoded_token['user_id']
-    except AttributeError as ex:
-        current_app.logger.error(f"Invalid request JSON: {ex}")
-        return jsonify({"message": "Invalid request"}), 400
-
-    if user_id != requesting_user_id:
-        current_app.logger.error(f"Insufficient permissions: {requesting_user_id} != {user_id}")
-        return jsonify({"message": "Insufficient permissions"}), 403
+    user_verified, error_response = verify_user(user_id, request)
+    if not user_verified:
+        return error_response
 
     try:
         user = get_user(user_id)
@@ -83,15 +77,9 @@ def handle_create_user():
             "error": "Invalid user_id"
         }), 400
 
-    try:
-        requesting_user_id = request.decoded_token['user_id']
-    except AttributeError as ex:
-        current_app.logger.error(f"Invalid request JSON: {ex}")
-        return jsonify({"message": "Invalid request"}), 400
-
-    if user_id != requesting_user_id:
-        current_app.logger.error(f"Insufficient permissions: {requesting_user_id} != {user_id}")
-        return jsonify({"message": "Insufficient permissions"}), 403
+    user_verified, error_response = verify_user(user_id, request)
+    if not user_verified:
+        return error_response
 
     try:
         new_user = create_user(user_id, request.json)
@@ -125,22 +113,16 @@ def handle_create_user():
 @firebase_auth_required
 def handle_update_user(user_id):
 
-    try:
-        requesting_user_id = request.decoded_token['user_id']
-    except AttributeError as ex:
-        current_app.logger.error(f"Invalid request JSON: {ex}")
-        return jsonify({"message": "Invalid request"}), 400
-
-    if user_id != requesting_user_id:
-        current_app.logger.error(f"Insufficient permissions: {requesting_user_id} != {user_id}")
-        return jsonify({"message": "Insufficient permissions"}), 403
+    user_verified, error_response = verify_user(user_id, request)
+    if not user_verified:
+        return error_response
 
     try:
-        user = update_user(user_id, request.json)
+        updated_user_data = update_user(user_id, request.json)
         return jsonify({
             "success": True,
             "message": "User updated",
-            "data": user.to_dict()
+            "data": updated_user_data
         }), 200
     except UserNotFoundError as e:
         return jsonify({
