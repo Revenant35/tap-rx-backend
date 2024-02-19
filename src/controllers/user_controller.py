@@ -96,7 +96,7 @@ def create_user(user_id: str, user_json_dict: dict) -> User:
         dependents = user_json_dict.get("dependents", [])
         monitoring_users = user_json_dict.get("monitoring_users", [])
         monitored_by_users = user_json_dict.get("monitored_by_users", [])
-    except (ValueError, KeyError) as ex:
+    except (ValueError, KeyError, TypeError) as ex:
         current_app.logger.error(f"Invalid request JSON: {ex}")
         raise InvalidRequestError
 

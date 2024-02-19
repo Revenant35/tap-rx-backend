@@ -44,6 +44,9 @@ class User:
         self.monitoring_users = monitoring_users or []
         self.monitored_by_users = monitored_by_users or []
 
+    def __eq__(self, other):
+        return all(getattr(self, attr) == getattr(other, attr) for attr in vars(self))
+
     def __repr__(self):
         return f'<{self.__class__.__name__} id=({self.user_id}), name=({self.first_name} {self.last_name})>'
 

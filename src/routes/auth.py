@@ -40,12 +40,12 @@ def verify_user(user_id: str, request: flask.Request) -> tuple[bool, Optional[tu
         user_id: (str) Username for user.
         request: (flask.Request) The request object.
 
-    Returns:
-        bool: True if the user is verified, otherwise False.
+    Returns: bool: True if the user is verified, otherwise False. Optional[tuple[Response, int]]: A tuple containing
+    the response and status code of the error encountered if the user is not verified.
     """
     try:
         requesting_user_id = request.decoded_token['user_id']
-    except (AttributeError, KeyError, ValueError) as ex:
+    except (AttributeError, KeyError, ValueError, TypeError) as ex:
         current_app.logger.error(f"Invalid request JSON: {ex}")
         return False, (jsonify({"message": "Invalid request"}), 400)
 

@@ -24,8 +24,7 @@ jobs:
 
       - name: Run tests
         run: |
-          # Add commands to run your tests here
-          echo "Running tests..."
+          python -m pytest 
 
   deploy:
     runs-on: ubuntu-latest
