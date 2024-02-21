@@ -3,8 +3,8 @@ from flask import current_app
 
 from src.models.User import User
 from src.models.errors.invalid_request_error import InvalidRequestError
-from src.models.errors.user_already_exists_error import UserAlreadyExistsError
-from src.models.errors.user_not_found_error import UserNotFoundError
+from src.models.errors.resource_already_exists_error import ResourceAlreadyExistsError
+from src.models.errors.resource_not_found_error import ResourceNotFoundError
 
 
 def get_users(start_at=None, limit=50):
@@ -50,13 +50,13 @@ def get_user(user_id):
         The user's data.
 
     Raises:
-        UserNotFoundError: If the user is not found.
+        ResourceNotFoundError: If the user is not found.
         ValueError, TypeError, exceptions.FirebaseError: If an error occurs while trying to fetch the user.
     """
 
     user_data = db.reference(f"/users/{user_id}").get()
     if user_data is None:
-        raise UserNotFoundError
+        raise ResourceNotFoundError
     return user_data
 
 
@@ -73,7 +73,7 @@ def create_user(user_id: str, user_json_dict: dict) -> User:
 
     Raises:
         InvalidRequestError: If the request is invalid.
-        UserAlreadyExistsError: If the user already exists.
+        ResourceAlreadyExistsError: If the user already exists.
         ValueError, TypeError: If an error occurs while trying to store the user.
         exceptions.FirebaseError: If an error occurs while interacting with the database.
     """
@@ -86,7 +86,7 @@ def create_user(user_id: str, user_json_dict: dict) -> User:
 
     if user_data is not None:
         current_app.logger.error(f"User {user_id} already exists")
-        raise UserAlreadyExistsError
+        raise ResourceAlreadyExistsError
 
     try:
         first_name = user_json_dict["first_name"]
@@ -135,7 +135,7 @@ def update_user(user_id: str, user_json_dict: dict) -> dict:
         dict: The user data that was updated.
 
     Raises:
-        UserNotFoundError: If the user is not found.
+        ResourceNotFoundError: If the user is not found.
         ValueError, TypeError: If an error occurs while trying to update the user.
         exceptions.FirebaseError: If an error occurs while interacting with the database.
     """
@@ -147,7 +147,7 @@ def update_user(user_id: str, user_json_dict: dict) -> dict:
 
     if user_data is None:
         current_app.logger.error(f"User {user_id} does not exist")
-        raise UserNotFoundError
+        raise ResourceNotFoundError
 
     updated_user_data = {}
     try:

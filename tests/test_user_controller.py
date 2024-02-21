@@ -5,7 +5,7 @@ from firebase_admin.exceptions import FirebaseError
 
 from src.controllers.user_controller import create_user, update_user
 from src.models.User import User
-from src.routes.user_router import InvalidRequestError, UserAlreadyExistsError, UserNotFoundError
+from src.routes.user_router import InvalidRequestError, ResourceAlreadyExistsError, ResourceNotFoundError
 
 
 def test_create_user_when_user_is_created_return_user(app):
@@ -79,7 +79,7 @@ def test_create_user_when_user_exists_raise_user_already_exists_error(app):
 
     with patch("firebase_admin.db.reference", return_value=mock_db_users_ref):
         mock_db_users_ref.get.return_value = MagicMock()
-        with pytest.raises(UserAlreadyExistsError):
+        with pytest.raises(ResourceAlreadyExistsError):
             create_user(mock_user_id, mock_json_dict)
 
 
@@ -139,7 +139,7 @@ def test_update_user_when_user_doesnt_exist_raise_user_not_found_error(app):
 
     with patch("firebase_admin.db.reference", return_value=mock_db_users_ref):
         mock_db_users_ref.get.return_value = None
-        with pytest.raises(UserNotFoundError):
+        with pytest.raises(ResourceNotFoundError):
             update_user(mock_user_id, mock_json_dict)
 
 

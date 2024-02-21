@@ -3,8 +3,8 @@ from flask import Blueprint, current_app, jsonify, request
 
 from src.controllers.user_controller import get_users, update_user, create_user, get_user
 from src.models.errors.invalid_request_error import InvalidRequestError
-from src.models.errors.user_already_exists_error import UserAlreadyExistsError
-from src.models.errors.user_not_found_error import UserNotFoundError
+from src.models.errors.resource_already_exists_error import ResourceAlreadyExistsError
+from src.models.errors.resource_not_found_error import ResourceNotFoundError
 from src.routes.auth import firebase_auth_required, verify_user
 
 users_bp = Blueprint('users_bp', __name__)
@@ -48,7 +48,7 @@ def handle_get_user(user_id):
             "message": "User found",
             "data": user
         }), 200
-    except UserNotFoundError as e:
+    except ResourceNotFoundError as e:
         return jsonify({
             "success": False,
             "message": "User not found",
@@ -89,7 +89,7 @@ def handle_create_user():
             "message": "Invalid request",
             "error": e.message
         }), 400
-    except UserAlreadyExistsError as e:
+    except ResourceAlreadyExistsError as e:
         return jsonify({
             "success": False,
             "message": "User already exists",
@@ -124,7 +124,7 @@ def handle_update_user(user_id):
             "message": "User updated",
             "data": updated_user_data
         }), 200
-    except UserNotFoundError as e:
+    except ResourceNotFoundError as e:
         return jsonify({
             "success": False,
             "message": "User not found",
