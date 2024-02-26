@@ -1,15 +1,23 @@
+import os
 from functools import wraps
 from typing import Optional
 
 import firebase_admin
 import flask
+from dotenv import load_dotenv
 from firebase_admin import auth
 from flask import request, jsonify, Response, current_app
 
+load_dotenv()
 
 def firebase_auth_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
+        # Check if running in development environment
+        if os.getenv('FLASK_ENV') == 'development':
+            # Bypass Firebase Auth
+            return f(*args, **kwargs)
+
         if not firebase_admin._apps:
             raise ValueError("Firebase app is not initialized")
 
@@ -45,6 +53,11 @@ def verify_user(user_id: str, request: flask.Request) -> tuple[bool, Optional[tu
         verified and an optional tuple of Response and int representing the error response and status code if there was
         an error.
     """
+    # Check if running in development environment
+    if os.getenv('FLASK_ENV') == 'development':
+        # Bypass Firebase Auth
+        return True, None
+
     try:
         requesting_user_id = request.decoded_token['user_id']
     except (AttributeError, KeyError, ValueError, TypeError) as ex:
