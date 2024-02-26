@@ -3,23 +3,16 @@ from flask import Blueprint, request, jsonify, current_app
 
 from src.controllers.medication_controller import create_medication
 from src.routes.auth import firebase_auth_required, verify_user
+from src.utils.validators import validate_json
 
 medications_bp = Blueprint('medications_bp', __name__)
 
 
 @medications_bp.route('/', methods=['POST'])
 @firebase_auth_required
+@validate_json("user_id", "name")
 def handle_create_medication():
-    try:
-        user_id = request.json["user_id"]
-    except (ValueError, KeyError) as ex:
-        current_app.logger.error(f"Invalid request JSON: {ex}")
-        return jsonify({
-            "success": False,
-            "message": "Invalid request",
-            "error": "Invalid user_id"
-        }), 400
-
+    user_id = request.json["user_id"]
     user_verified, error_response = verify_user(user_id, request)
     if not user_verified:
         return error_response

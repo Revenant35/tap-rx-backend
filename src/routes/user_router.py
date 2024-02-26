@@ -3,6 +3,7 @@ from flask import Blueprint, current_app, jsonify, request
 
 from src.controllers.user_controller import get_users, update_user, create_user, get_user
 from src.routes.auth import firebase_auth_required, verify_user
+from src.utils.validators import validate_json
 
 users_bp = Blueprint('users_bp', __name__)
 
@@ -56,18 +57,9 @@ def handle_get_user(user_id):
 
 @users_bp.route('/', methods=['POST'])
 @firebase_auth_required
+@validate_json("user_id", "first_name", "last_name")
 def handle_create_user():
-
-    try:
-        user_id = request.json["user_id"]
-    except (ValueError, KeyError) as ex:
-        current_app.logger.error(f"Invalid request JSON: {ex}")
-        return jsonify({
-            "success": False,
-            "message": "Invalid request",
-            "error": "Invalid user_id"
-        }), 400
-
+    user_id = request.json["user_id"]
     user_verified, error_response = verify_user(user_id, request)
     if not user_verified:
         return error_response

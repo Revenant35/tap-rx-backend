@@ -13,11 +13,11 @@ def test_handle_create_medication_when_medication_is_created_return_201(app, cli
     medication_id = "test_medication_id"
     mock_request_data = {
         "user_id": user_id,
-        "medication_name": medication_name
+        "name": medication_name
     }
     mock_medication_data = {
         "user_id": user_id,
-        "medication_name": medication_name,
+        "name": medication_name,
         "medication_id": medication_id
     }
     mock_medication = MagicMock()
@@ -34,7 +34,7 @@ def test_handle_create_medication_when_medication_is_created_return_201(app, cli
 
 def test_handle_create_user_when_user_id_is_missing_return_400(app, client):
     mock_request_data = {
-        "medication_name": "test_medication",
+        "name": "test_medication",
     }
 
     response = client.post("/users/", json=mock_request_data)
@@ -44,7 +44,7 @@ def test_handle_create_user_when_user_id_is_missing_return_400(app, client):
 def test_handle_create_medication_when_user_is_not_verified_return_403(app, client):
     mock_request_data = {
         "user_id": "test_user",
-        "medication_name": "test_medication",
+        "name": "test_medication",
     }
     error_response = jsonify({"message": "Insufficient permissions"})
 
@@ -67,7 +67,7 @@ def test_handle_create_medication_when_invalid_medication_data_return_400(app, c
 def test_handle_create_medication_when_user_doesnt_exist_return_404(app, client):
     mock_request_data = {
         "user_id": "test_user",
-        "medication_name": "test_medication",
+        "name": "test_medication",
     }
 
     with patch("src.routes.medication_router.verify_user", return_value=(True, None)), \
@@ -79,7 +79,7 @@ def test_handle_create_medication_when_user_doesnt_exist_return_404(app, client)
 def test_handle_create_medication_when_medication_fails_to_be_created_return_500(app, client):
     mock_request_data = {
         "user_id": "test_user",
-        "medication_name": "test_medication",
+        "name": "test_medication",
     }
 
     with patch("src.routes.medication_router.verify_user", return_value=(True, None)), \
