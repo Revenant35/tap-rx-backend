@@ -159,11 +159,24 @@ def test_update_user_when_get_fails_raise_error(app):
             update_user(mock_user_id, mock_json_dict)
 
 
-def test_update_user_when_update_fails_raise_firebase_error(app):
+def test_update_user_when_no_valid_update_fields_raise_invalid_request_error(app):
     mock_db_users_ref = MagicMock()
     mock_user_id = "test_user"
     mock_json_dict = {
         "Invalid key": "Invalid"
+    }
+
+    with patch("firebase_admin.db.reference", return_value=mock_db_users_ref):
+        mock_db_users_ref.get.return_value = MagicMock()
+        with pytest.raises(InvalidRequestError):
+            update_user(mock_user_id, mock_json_dict)
+
+
+def test_update_user_when_update_fails_raise_firebase_error(app):
+    mock_db_users_ref = MagicMock()
+    mock_user_id = "test_user"
+    mock_json_dict = {
+        "first_name": "new fname",
     }
 
     with patch("firebase_admin.db.reference", return_value=mock_db_users_ref):

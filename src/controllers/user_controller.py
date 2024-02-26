@@ -150,17 +150,15 @@ def update_user(user_id: str, user_json_dict: dict) -> dict:
         raise ResourceNotFoundError(f"User {user_id} does not exist")
 
     updated_user_data = {}
-    try:
-        keys_to_copy = [
-            "first_name", "last_name", "phone", "medications", "dependents", "monitoring_users", "monitored_by_users"
-        ]
-        for key in keys_to_copy:
-            value = user_json_dict.get(key)
-            if value is not None:
-                updated_user_data[key] = value
-    except (ValueError, KeyError) as ex:
-        current_app.logger.error(f"Invalid request JSON: {ex}")
-        raise InvalidRequestError
+    keys_to_copy = [
+        "first_name", "last_name", "phone", "medications", "dependents", "monitoring_users", "monitored_by_users"
+    ]
+    for key in keys_to_copy:
+        value = user_json_dict.get(key)
+        if value is not None:
+            updated_user_data[key] = value
+    if not updated_user_data:
+        raise InvalidRequestError("No valid fields to update")
 
     try:
         db.reference(f"/users/{user_id}").update(updated_user_data)

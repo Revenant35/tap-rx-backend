@@ -1,7 +1,19 @@
 import os
+from functools import wraps
 from unittest.mock import patch
 
 import pytest
+
+
+def mock_decorator(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        return f(*args, **kwargs)
+
+    return decorated_function
+
+
+patch("src.routes.auth.firebase_auth_required", mock_decorator).start()
 
 
 @pytest.fixture
@@ -19,3 +31,8 @@ def app():
         })
         with app.app_context():
             yield app
+
+
+@pytest.fixture()
+def client(app):
+    return app.test_client()

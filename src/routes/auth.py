@@ -40,8 +40,10 @@ def verify_user(user_id: str, request: flask.Request) -> tuple[bool, Optional[tu
         user_id: (str) Username for user.
         request: (flask.Request) The request object.
 
-    Returns: bool: True if the user is verified, otherwise False. Optional[tuple[Response, int]]: A tuple containing
-    the response and status code of the error encountered if the user is not verified.
+    Returns:
+        tuple[bool, Optional[tuple[Response, int]]]: A tuple containing a boolean representing whether the user was
+        verified and an optional tuple of Response and int representing the error response and status code if there was
+        an error.
     """
     try:
         requesting_user_id = request.decoded_token['user_id']
