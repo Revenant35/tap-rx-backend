@@ -5,7 +5,9 @@ from firebase_admin.exceptions import FirebaseError
 
 from src.controllers.user_controller import create_user, update_user
 from src.models.User import User
-from src.routes.user_router import InvalidRequestError, ResourceAlreadyExistsError, ResourceNotFoundError
+from src.models.errors.invalid_request_error import InvalidRequestError
+from src.models.errors.resource_already_exists_error import ResourceAlreadyExistsError
+from src.models.errors.resource_not_found_error import ResourceNotFoundError
 
 
 def test_create_user_when_user_is_created_return_user(app):
