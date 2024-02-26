@@ -1,4 +1,3 @@
-from firebase_admin import exceptions
 from flask import Blueprint, current_app, jsonify, request
 
 from src.controllers.user_controller import get_users, update_user, create_user, get_user
@@ -23,7 +22,7 @@ def handle_get_users():
             "data": users,
             "next_page": next_page  # UID to be used as start_at for the next page
         }), 200
-    except (ValueError, TypeError, exceptions.FirebaseError) as e:
+    except (ValueError, TypeError) as e:
         current_app.logger.critical(f"Failed to fetch users: {e}")
         return jsonify({
             "success": False,
@@ -46,7 +45,7 @@ def handle_get_user(user_id):
             "message": "User found",
             "data": user
         }), 200
-    except (ValueError, TypeError, exceptions.FirebaseError) as e:
+    except (ValueError, TypeError) as e:
         current_app.logger.critical(f"Failed to fetch user: {e}")
         return jsonify({
             "success": False,
@@ -66,7 +65,7 @@ def handle_create_user():
 
     try:
         new_user = create_user(user_id, request.json)
-    except (ValueError, TypeError, exceptions.FirebaseError) as e:
+    except (ValueError, TypeError) as e:
         return jsonify({
             "success": False,
             "message": "Internal server error",
@@ -95,7 +94,7 @@ def handle_update_user(user_id):
             "message": "User updated",
             "data": updated_user_data
         }), 200
-    except (ValueError, TypeError, exceptions.FirebaseError) as e:
+    except (ValueError, TypeError) as e:
         return jsonify({
             "success": False,
             "message": "Failed to update user",

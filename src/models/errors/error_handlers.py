@@ -1,3 +1,4 @@
+from firebase_admin.exceptions import FirebaseError
 from flask import jsonify
 
 from src.models.errors.invalid_request_error import InvalidRequestError
@@ -30,3 +31,10 @@ def register_error_handlers(app):
             "message": "Resource already exists",
             "error": e.message
         }), 409
+
+    @app.errorhandler(FirebaseError)
+    def handle_firebase_error(e):
+        return jsonify({
+            "success": False,
+            "message": "Internal server error"
+        }), 500

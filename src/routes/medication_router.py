@@ -19,7 +19,7 @@ def handle_create_medication():
 
     try:
         new_medication = create_medication(request.json)
-    except (ValueError, TypeError, exceptions.FirebaseError) as e:
+    except (ValueError, TypeError) as e:
         return jsonify({
             "success": False,
             "message": "Internal server error",
