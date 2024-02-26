@@ -129,3 +129,115 @@ def test_handle_create_medication_when_medication_fails_to_be_created_return_500
             patch("src.routes.medication_router.create_medication", side_effect=FirebaseError(8, "Test")):
         response = client.post("/medications/", json=mock_request_data)
         assert response.status_code == 500
+
+
+def test_handle_create_medication_when_new_medication_node_is_invalid_return_500(app, client):
+    mock_request_data = {
+        "user_id": "test_user",
+        "name": "test_medication",
+    }
+
+    with patch("src.routes.medication_router.verify_user", return_value=(True, None)), \
+            patch("src.routes.medication_router.create_medication", side_effect=ValueError):
+        response = client.post("/medications/", json=mock_request_data)
+        assert response.status_code == 500
+
+
+def test_handle_update_medication_when_medication_is_updated_return_200(app, client):
+    medication_id = "test_medication_id"
+    mock_medication = Medication(user_id="test_user", name="test_medication", medication_id=medication_id)
+    mock_medication_data = {
+        "name": "new_medication_name",
+        "invalid_key": "invalid value"
+    }
+    mock_updated_medication_data = {
+        "name": "new_medication_name",
+    }
+
+    with patch("src.routes.medication_router.verify_user", return_value=(True, None)), \
+            patch("src.routes.medication_router.get_medication", return_value=mock_medication), \
+            patch("src.routes.medication_router.update_medication", return_value=mock_updated_medication_data):
+        response = client.put(f"/medications/{medication_id}", json=mock_medication_data)
+        assert response.status_code == 200
+        assert response.json["success"] is True
+        assert response.json["message"] == "Medication updated"
+
+
+def test_handle_update_medication_when_medication_is_not_found_return_404(app, client):
+    medication_id = "test_medication_id"
+    mock_medication_data = {
+        "name": "new_medication_name",
+    }
+
+    with patch("src.routes.medication_router.verify_user", return_value=(True, None)), \
+            patch("src.routes.medication_router.get_medication", side_effect=ResourceNotFoundError):
+        response = client.put(f"/medications/{medication_id}", json=mock_medication_data)
+        assert response.status_code == 404
+
+
+def test_handle_update_medication_when_firebase_fails_during_get_return_500(app, client):
+    medication_id = "test_medication_id"
+    mock_medication_data = {
+        "name": "new_medication_name",
+    }
+
+    with patch("src.routes.medication_router.verify_user", return_value=(True, None)), \
+            patch("src.routes.medication_router.get_medication", side_effect=FirebaseError(8, "Test")):
+        response = client.put(f"/medications/{medication_id}", json=mock_medication_data)
+        assert response.status_code == 500
+
+
+def test_handle_update_medication_when_user_is_not_verified_return_403(app, client):
+    medication_id = "test_medication_id"
+    mock_medication_data = {
+        "name": "new_medication_name",
+    }
+    mock_medication = Medication(user_id="test_user", name="test_medication", medication_id=medication_id)
+    error_response = jsonify({"message": "Insufficient permissions"})
+
+    with patch("src.routes.medication_router.get_medication", return_value=mock_medication), \
+            patch("src.routes.medication_router.verify_user", return_value=(False, (error_response, 403))):
+        response = client.put(f"/medications/{medication_id}", json=mock_medication_data)
+        assert response.status_code == 403
+
+
+def test_handle_update_medication_when_invalid_medication_data_return_400(app, client):
+    medication_id = "test_medication_id"
+    mock_medication_data = {
+        "Invalid key": "Invalid"
+    }
+    mock_medication = Medication(user_id="test_user", name="test_medication", medication_id=medication_id)
+
+    with patch("src.routes.medication_router.get_medication", return_value=mock_medication), \
+            patch("src.routes.medication_router.verify_user", return_value=(True, None)), \
+            patch("src.routes.medication_router.update_medication", side_effect=InvalidRequestError):
+        response = client.put(f"/medications/{medication_id}", json=mock_medication_data)
+        assert response.status_code == 400
+
+
+def test_handle_update_medication_when_update_fails_return_500(app, client):
+    medication_id = "test_medication_id"
+    mock_medication_data = {
+        "name": "new_medication_name",
+    }
+    mock_medication = Medication(user_id="test_user", name="test_medication", medication_id=medication_id)
+
+    with patch("src.routes.medication_router.get_medication", return_value=mock_medication), \
+            patch("src.routes.medication_router.verify_user", return_value=(True, None)), \
+            patch("src.routes.medication_router.update_medication", side_effect=FirebaseError(8, "Test")):
+        response = client.put(f"/medications/{medication_id}", json=mock_medication_data)
+        assert response.status_code == 500
+
+
+def test_handle_update_medication_when_update_node_is_invalid_return_500(app, client):
+    medication_id = "test_medication_id"
+    mock_medication_data = {
+        "name": "new_medication_name",
+    }
+    mock_medication = Medication(user_id="test_user", name="test_medication", medication_id=medication_id)
+
+    with patch("src.routes.medication_router.get_medication", return_value=mock_medication), \
+            patch("src.routes.medication_router.verify_user", return_value=(True, None)), \
+            patch("src.routes.medication_router.update_medication", side_effect=ValueError):
+        response = client.put(f"/medications/{medication_id}", json=mock_medication_data)
+        assert response.status_code == 500

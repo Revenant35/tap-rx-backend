@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 
-from src.controllers.medication_controller import create_medication, get_medication
+from src.controllers.medication_controller import create_medication, get_medication, update_medication
 from src.routes.auth import firebase_auth_required, verify_user
 from src.utils.validators import validate_json
 
@@ -46,3 +46,25 @@ def handle_create_medication():
         "message": "Medication created successfully",
         "data": new_medication.to_dict()
     }), 201
+
+
+@medications_bp.route('/<medication_id>', methods=['PUT'])
+@firebase_auth_required
+def handle_update_medication(medication_id):
+    medication = get_medication(medication_id)
+    user_verified, error_response = verify_user(medication.user_id, request)
+    if not user_verified:
+        return error_response
+
+    try:
+        updated_medication_data = update_medication(medication_id, request.json)
+        return jsonify({
+            "success": True,
+            "message": "Medication updated",
+            "data": updated_medication_data
+        }), 200
+    except (ValueError, TypeError):
+        return jsonify({
+            "success": False,
+            "message": "Failed to update medication",
+        }), 500

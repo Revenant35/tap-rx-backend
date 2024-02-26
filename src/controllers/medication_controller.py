@@ -103,3 +103,48 @@ def create_medication(medication_json_dict: dict) -> Medication:
         raise ex
 
     return new_medication
+
+
+def update_medication(medication_id: str, medication_json_dict: dict) -> dict:
+    """
+    Updates an existing medication in the database. Assumes medication does exist in the database, as that should have
+    been checked already when retreiving the medication.
+
+    Args:
+        medication_id: (str) UID for medication.
+        medication_json_dict: (dict) Dictionary containing medication data to be updated.
+
+    Returns:
+        dict: The medication data that was updated.
+
+    Raises:
+        InvalidRequestError: If the request is invalid.
+        ValueError, TypeError: If an error occurs while trying to store the medication.
+        exceptions.FirebaseError: If an error occurs while interacting with the database.
+
+    """
+    updated_medication_data = {}
+    medication_keys_to_copy = [
+        "container_id", "name", "nickname", "dosage"
+    ]
+    for key in medication_keys_to_copy:
+        if key in medication_json_dict:
+            updated_medication_data[key] = medication_json_dict[key]
+
+    if "schedule" in medication_json_dict:
+        updated_schedule = Schedule.from_dict(medication_json_dict["schedule"])
+        if updated_schedule:
+            updated_medication_data["schedule"] = updated_schedule.to_dict()
+
+    if not updated_medication_data:
+        raise InvalidRequestError("No valid fields to update")
+
+    try:
+        db.reference(f"/medications/{medication_id}").update(updated_medication_data)
+    except (ValueError, TypeError) as ex:
+        current_app.logger.error(f"Error while trying to update medication {medication_id}: {ex}")
+    except exceptions.FirebaseError as ex:
+        current_app.logger.error(f"Firebase failure while trying to update medication {medication_id}: {ex}")
+        raise ex
+
+    return updated_medication_data
