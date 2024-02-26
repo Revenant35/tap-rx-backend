@@ -1,0 +1,94 @@
+Medication:
+  type: object
+  properties:
+    id:
+      type: integer
+      description: The medication's unique identifier
+    name:
+      type: string
+      description: The name of the medication
+    dosage:
+      type: string
+      description: The prescribed dosage
+
+#Dependent:
+#  type: object
+#  properties:
+#    first_name:
+#      type: string
+#      description: The first name of the user
+#    last_name:
+#      type: string
+#      description: The last name of the user
+#    phone:
+#      type: string
+#      description: The phone number of the user
+#    medications:
+#      type: array
+#      description: A list of medications the user is taking
+#      items:
+#        type: string
+#        description: The ID of the medication
+#      example: ["01FemsE003W_RG", "TKC94WPpGLHFW", "-Ljg3t3v3f9g3"]
+
+User:
+  type: object
+  properties:
+    user_id:
+      type: integer
+      description: The user's unique identifier
+      example: "i3t4g3v3f9g3"
+    first_name:
+      type: string
+      description: The first name of the user
+      example: John
+    last_name:
+      type: string
+      description: The last name of the user
+      example: Doe
+    phone:
+      type: string
+      description: The phone number of the user
+      example: +1 (123) 456-7890
+    medications:
+      type: array
+      description: A list of medications the user is taking
+      items:
+        type: string
+        description: The ID of the medication
+      example: ["01FemsE003W_RG", "TKC94WPpGLHFW", "-Ljg3t3v3f9g3"]
+#    dependents:
+#      type: array
+#      description: A list of dependents the user is responsible for
+#      items:
+#        type: string
+#        description: The name of the dependent
+#      example: ["Jane Doe", "John Doe"]
+#    monitoring_users:
+#      type: array
+#      description: A list of users the user is monitoring
+#      items:
+#        type: string
+#        description: The ID of the user
+#      example: ["pF922DLKlfmR20", "f9g3i3t4g3v3"]
+#    monitored_by_users:
+#      type: array
+#      description: A list of users that are monitoring the user
+#      items:
+#        type: string
+#        description: The ID of the user
+#      example: ["qF922DLKlfmR20", "d9g3i3t4g3v3"]
+
+#Schedule:
+#  type: object
+#  properties:
+#    id:
+#      type: integer
+#      description: The schedule's unique identifier
+#    medication_id:
+#      type: integer
+#      description: The ID of the medication to be taken
+#    time:
+#      type: string
+#      format: date-time
+#      description: The time medication should be taken
