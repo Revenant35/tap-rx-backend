@@ -2,9 +2,6 @@ from firebase_admin import exceptions
 from flask import Blueprint, current_app, jsonify, request
 
 from src.controllers.user_controller import get_users, update_user, create_user, get_user
-from src.models.errors.invalid_request_error import InvalidRequestError
-from src.models.errors.resource_already_exists_error import ResourceAlreadyExistsError
-from src.models.errors.resource_not_found_error import ResourceNotFoundError
 from src.routes.auth import firebase_auth_required, verify_user
 
 users_bp = Blueprint('users_bp', __name__)
@@ -48,12 +45,6 @@ def handle_get_user(user_id):
             "message": "User found",
             "data": user
         }), 200
-    except ResourceNotFoundError as e:
-        return jsonify({
-            "success": False,
-            "message": "User not found",
-            "error": e.message
-        }), 404
     except (ValueError, TypeError, exceptions.FirebaseError) as e:
         current_app.logger.critical(f"Failed to fetch user: {e}")
         return jsonify({
@@ -83,18 +74,6 @@ def handle_create_user():
 
     try:
         new_user = create_user(user_id, request.json)
-    except InvalidRequestError as e:
-        return jsonify({
-            "success": False,
-            "message": "Invalid request",
-            "error": e.message
-        }), 400
-    except ResourceAlreadyExistsError as e:
-        return jsonify({
-            "success": False,
-            "message": "User already exists",
-            "error": e.message
-        }), 409
     except (ValueError, TypeError, exceptions.FirebaseError) as e:
         return jsonify({
             "success": False,
@@ -124,18 +103,6 @@ def handle_update_user(user_id):
             "message": "User updated",
             "data": updated_user_data
         }), 200
-    except ResourceNotFoundError as e:
-        return jsonify({
-            "success": False,
-            "message": "User not found",
-            "error": e.message
-        }), 404
-    except InvalidRequestError as e:
-        return jsonify({
-            "success": False,
-            "message": "Invalid request",
-            "error": e.message
-        }), 400
     except (ValueError, TypeError, exceptions.FirebaseError) as e:
         return jsonify({
             "success": False,

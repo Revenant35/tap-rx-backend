@@ -43,7 +43,7 @@ def create_medication(medication_json_dict: dict) -> Medication:
 
     if user_data is None:
         current_app.logger.error(f"User {user_id} does not exist")
-        raise ResourceNotFoundError
+        raise ResourceNotFoundError(f"User {user_id} does not exist")
 
     try:
         # Generates UID for the medication and creates the empty node.

@@ -56,7 +56,7 @@ def get_user(user_id):
 
     user_data = db.reference(f"/users/{user_id}").get()
     if user_data is None:
-        raise ResourceNotFoundError
+        raise ResourceNotFoundError(f"User {user_id} does not exist")
     return user_data
 
 
@@ -86,7 +86,7 @@ def create_user(user_id: str, user_json_dict: dict) -> User:
 
     if user_data is not None:
         current_app.logger.error(f"User {user_id} already exists")
-        raise ResourceAlreadyExistsError
+        raise ResourceAlreadyExistsError(f"User {user_id} already exists")
 
     try:
         first_name = user_json_dict["first_name"]
@@ -147,7 +147,7 @@ def update_user(user_id: str, user_json_dict: dict) -> dict:
 
     if user_data is None:
         current_app.logger.error(f"User {user_id} does not exist")
-        raise ResourceNotFoundError
+        raise ResourceNotFoundError(f"User {user_id} does not exist")
 
     updated_user_data = {}
     try:
