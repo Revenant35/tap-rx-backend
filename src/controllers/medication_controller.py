@@ -7,6 +7,32 @@ from src.models.errors.invalid_request_error import InvalidRequestError
 from src.models.errors.resource_not_found_error import ResourceNotFoundError
 
 
+def get_medication(medication_id: str) -> Medication:
+    """
+    Fetches a medication from the database.
+
+    Args:
+        medication_id: (str) UID for medication.
+
+    Returns:
+        Medication: The medication object.
+
+    Raises:
+        ResourceNotFoundError: If the medication is not found.
+        exceptions.FirebaseError: If an error occurs while interacting with the database.
+    """
+    try:
+        medication_data = db.reference(f"/medications/{medication_id}").get()
+    except exceptions.FirebaseError as ex:
+        current_app.logger.error(f"Firebase failure while trying to retrieve medication {medication_id}: {ex}")
+        raise ex
+    if medication_data is None:
+        current_app.logger.error(f"Medication {medication_id} does not exist")
+        raise ResourceNotFoundError(f"Medication {medication_id} does not exist")
+
+    return Medication.from_dict(medication_data)
+
+
 def create_medication(medication_json_dict: dict) -> Medication:
     """
     Creates a new medication in the database.

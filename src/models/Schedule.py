@@ -40,6 +40,10 @@ class Schedule:
         if not data:
             return None
 
+        schedule_fields = ["minute", "hour", "day_of_month", "month", "day_of_week"]
+        if not any(field in data for field in schedule_fields):
+            return None
+
         return Schedule(
             minute=data.get("minute", None),
             hour=data.get("hour", None),

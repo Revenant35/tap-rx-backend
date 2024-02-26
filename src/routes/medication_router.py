@@ -1,11 +1,26 @@
-from firebase_admin import exceptions
-from flask import Blueprint, request, jsonify, current_app
+from flask import Blueprint, request, jsonify
 
-from src.controllers.medication_controller import create_medication
+from src.controllers.medication_controller import create_medication, get_medication
 from src.routes.auth import firebase_auth_required, verify_user
 from src.utils.validators import validate_json
 
 medications_bp = Blueprint('medications_bp', __name__)
+
+
+@medications_bp.route('/<medication_id>', methods=['GET'])
+@firebase_auth_required
+def handle_get_medication(medication_id):
+    medication = get_medication(medication_id)
+
+    user_verified, error_response = verify_user(medication.user_id, request)
+    if not user_verified:
+        return error_response
+
+    return jsonify({
+        "success": True,
+        "message": "Medication found",
+        "data": medication.to_dict()
+    }), 200
 
 
 @medications_bp.route('/', methods=['POST'])
