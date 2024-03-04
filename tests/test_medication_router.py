@@ -241,3 +241,34 @@ def test_handle_update_medication_when_update_node_is_invalid_return_500(app, cl
             patch("src.routes.medication_router.update_medication", side_effect=ValueError):
         response = client.put(f"/medications/{medication_id}", json=mock_medication_data)
         assert response.status_code == 500
+
+
+def test_handle_delete_medication_when_medication_is_deleted_return_200(app, client):
+    medication_id = "test_medication_id"
+    mock_medication = Medication(user_id="test_user", name="test_medication", medication_id=medication_id)
+
+    with patch("src.routes.medication_router.verify_user", return_value=(True, None)), \
+            patch("src.routes.medication_router.get_medication", return_value=mock_medication), \
+            patch("src.routes.medication_router.delete_medication", return_value=None):
+        response = client.delete(f"/medications/{medication_id}")
+        assert response.status_code == 200
+        assert response.json["success"] is True
+        assert response.json["message"] == "Medication deleted"
+
+
+def test_handle_delete_medication_when_medication_is_not_found_return_404(app, client):
+    medication_id = "test_medication_id"
+
+    with patch("src.routes.medication_router.verify_user", return_value=(True, None)), \
+            patch("src.routes.medication_router.get_medication", side_effect=ResourceNotFoundError):
+        response = client.delete(f"/medications/{medication_id}")
+        assert response.status_code == 404
+
+
+def test_handle_delete_medication_when_firebase_fails_during_get_return_500(app, client):
+    medication_id = "test_medication_id"
+
+    with patch("src.routes.medication_router.verify_user", return_value=(True, None)), \
+            patch("src.routes.medication_router.get_medication", side_effect=FirebaseError(8, "Test")):
+        response = client.delete(f"/medications/{medication_id}")
+        assert response.status_code == 500

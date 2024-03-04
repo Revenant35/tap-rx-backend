@@ -1,5 +1,6 @@
-from firebase_admin import db, exceptions
+from firebase_admin import db
 from flask import current_app
+from firebase_admin.exceptions import FirebaseError
 
 from src.models.Medication import Medication
 from src.models.Schedule import Schedule
@@ -19,18 +20,63 @@ def get_medication(medication_id: str) -> Medication:
 
     Raises:
         ResourceNotFoundError: If the medication is not found.
-        exceptions.FirebaseError: If an error occurs while interacting with the database.
+        FirebaseError: If an error occurs while interacting with the database.
     """
     try:
         medication_data = db.reference(f"/medications/{medication_id}").get()
-    except exceptions.FirebaseError as ex:
+    except FirebaseError as ex:
         current_app.logger.error(f"Firebase failure while trying to retrieve medication {medication_id}: {ex}")
         raise ex
+
     if medication_data is None:
         current_app.logger.error(f"Medication {medication_id} does not exist")
         raise ResourceNotFoundError(f"Medication {medication_id} does not exist")
 
     return Medication.from_dict(medication_data)
+
+#
+# def get_medications(query=None, page=1, limit=50):
+#     """
+#     Retrieves medications from the database.
+#
+#     Args:
+#         query: (str) The query to filter the medications by. Optional.
+#         page: (int) The positive, non-zero page number to retrieve. Optional.
+#         limit: (int) The positive, non-zero maximum number of medications to retrieve. Optional.
+#
+#     Returns:
+#         list[dict]: The retrieved medications.
+#         total_medications: (int) The total number of medications in the database.
+#
+#     Raises:
+#         FirebaseError: If an error occurs while interacting with the database.
+#         ValueError: If the page or limit are invalid.
+#     """
+#     # Validate inputs
+#     if page <= 0:
+#         raise ValueError("Page must be a positive, non-zero integer")
+#
+#     if limit <= 0:
+#         raise ValueError("Limit must be a positive, non-zero integer")
+#
+#     # Fetch medications from the database
+#     db_ref = db.reference("/medications")
+#     medication_data = db_ref.order_by_key().get()
+#     if medication_data is None:
+#         return None, None
+#     medications = list(medication_data.values())
+#
+#     # Filter medications by query
+#     if query:
+#         medications = [medication for medication in medications if medication.name and query in medication.name]
+#
+#     # Paginate medications
+#     total_medications = len(medications)
+#     if page:
+#         medications = medications[(page - 1) * limit:]
+#     medications = medications[:limit]
+#
+#     return medications, total_medications
 
 
 def create_medication(medication_json_dict: dict) -> Medication:
@@ -45,9 +91,10 @@ def create_medication(medication_json_dict: dict) -> Medication:
 
     Raises:
         InvalidRequestError: If the request is invalid.
+        ResourceNotFoundError: If the user does not exist.
         ResourceAlreadyExistsError: If the medication already exists.
         ValueError, TypeError: If an error occurs while trying to store the medication.
-        exceptions.FirebaseError: If an error occurs while interacting with the database.
+        FirebaseError: If an error occurs while interacting with the database.
     """
     try:
         name = medication_json_dict["name"]
@@ -63,7 +110,7 @@ def create_medication(medication_json_dict: dict) -> Medication:
 
     try:
         user_data = db.reference(f"/users/{user_id}").get()
-    except exceptions.FirebaseError as ex:
+    except FirebaseError as ex:
         current_app.logger.error(f"Firebase failure while trying to retrieve user {user_id}: {ex}")
         raise ex
 
@@ -74,7 +121,7 @@ def create_medication(medication_json_dict: dict) -> Medication:
     try:
         # Generates UID for the medication and creates the empty node.
         medication_id = db.reference(f"/medications").push().key
-    except exceptions.FirebaseError as ex:
+    except FirebaseError as ex:
         current_app.logger.error(f"Firebase failure while trying to generate medication ID: {ex}")
         raise ex
 
@@ -98,7 +145,7 @@ def create_medication(medication_json_dict: dict) -> Medication:
     except (ValueError, TypeError) as ex:
         current_app.logger.error(f"Error while trying to store medication {medication_id}: {ex}")
         raise ex
-    except exceptions.FirebaseError as ex:
+    except FirebaseError as ex:
         current_app.logger.error(f"Firebase failure while trying to store medication {medication_id}: {ex}")
         raise ex
 
@@ -120,7 +167,7 @@ def update_medication(medication_id: str, medication_json_dict: dict) -> dict:
     Raises:
         InvalidRequestError: If the request is invalid.
         ValueError, TypeError: If an error occurs while trying to store the medication.
-        exceptions.FirebaseError: If an error occurs while interacting with the database.
+        FirebaseError: If an error occurs while interacting with the database.
 
     """
     updated_medication_data = {}
@@ -143,8 +190,30 @@ def update_medication(medication_id: str, medication_json_dict: dict) -> dict:
         db.reference(f"/medications/{medication_id}").update(updated_medication_data)
     except (ValueError, TypeError) as ex:
         current_app.logger.error(f"Error while trying to update medication {medication_id}: {ex}")
-    except exceptions.FirebaseError as ex:
+        # raise ex
+    except FirebaseError as ex:
         current_app.logger.error(f"Firebase failure while trying to update medication {medication_id}: {ex}")
         raise ex
 
     return updated_medication_data
+
+
+def delete_medication(medication_id: str):
+    """
+    Deletes a medication from the database.
+
+    Args:
+        medication_id: (str) The medication's ID.
+        
+    Returns:
+        None
+
+    Raises:
+        FirebaseError: If an error occurs while interacting with the database.
+    """
+    try:
+        db.reference(f"/medications/{medication_id}").delete()
+    except FirebaseError as ex:
+        current_app.logger.error(f"Firebase failure while trying to delete medication {medication_id}: {ex}")
+        raise ex
+    

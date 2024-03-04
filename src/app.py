@@ -31,6 +31,8 @@ def init_swagger(app: Flask):
     """
     models = read_yaml_file("src/documentation/models.yaml")
     swagger_config = {
+        "title": "TapRx API",
+        "version": "0.1.0",
         "headers": [],
         "specs": [
             {

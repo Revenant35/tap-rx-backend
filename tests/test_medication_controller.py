@@ -3,7 +3,8 @@ from unittest.mock import MagicMock, patch
 import pytest
 from firebase_admin.exceptions import FirebaseError
 
-from src.controllers.medication_controller import create_medication, get_medication, update_medication
+from src.controllers.medication_controller import create_medication, get_medication, update_medication, \
+    delete_medication
 from src.models.Medication import Medication
 from src.models.Schedule import Schedule
 from src.models.errors.invalid_request_error import InvalidRequestError
@@ -268,3 +269,34 @@ def test_update_medication_when_update_fails_raise_firebase_error(app):
         mock_db_ref.update.side_effect = FirebaseError(8, "test")
         with pytest.raises(FirebaseError):
             update_medication(mock_medication_id, mock_medication_json_dict)
+
+
+def test_delete_medication_when_medication_is_deleted_return_none(app):
+    mock_db_ref = MagicMock()
+    mock_medication_id = "test_medication"
+
+    with patch("firebase_admin.db.reference", return_value=mock_db_ref):
+        mock_db_ref.delete.return_value = None
+        delete_medication(mock_medication_id)
+        assert mock_db_ref.delete.called_once_with(mock_medication_id)
+
+
+def test_delete_medication_when_delete_fails_raise_firebase_error(app):
+    mock_db_ref = MagicMock()
+    mock_medication_id = "test_medication"
+
+    with patch("firebase_admin.db.reference", return_value=mock_db_ref):
+        mock_db_ref.delete.side_effect = FirebaseError(8, "test")
+        with pytest.raises(FirebaseError):
+            delete_medication(mock_medication_id)
+
+
+def test_delete_medication_when_medication_doesnt_exist_raise_resource_not_found_error(app):
+    mock_db_ref = MagicMock()
+    mock_medication_id = "test_medication"
+
+    with patch("firebase_admin.db.reference", return_value=mock_db_ref):
+        mock_db_ref.delete.return_value = None
+        mock_db_ref.delete.side_effect = ValueError()
+        with pytest.raises(ValueError):
+            delete_medication(mock_medication_id)
