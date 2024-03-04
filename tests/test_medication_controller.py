@@ -13,37 +13,40 @@ from src.models.errors.resource_not_found_error import ResourceNotFoundError
 
 def test_get_medication_when_medication_is_fetched_return_medication(app):
     mock_db_ref = MagicMock()
+    mock_user_id = "test_user"
     mock_medication_id = "test_medication"
     mock_medication_data = {
         "medication_id": mock_medication_id,
-        "user_id": "test_user",
+        "user_id": mock_user_id,
         "name": "Test Medication",
     }
 
     with patch("firebase_admin.db.reference", return_value=mock_db_ref):
         mock_db_ref.get.return_value = mock_medication_data
-        medication = get_medication(mock_medication_data)
+        medication = get_medication(mock_user_id, mock_medication_id)
         assert medication == Medication.from_dict(mock_medication_data)
 
 
 def test_get_medication_when_get_fails_raise_firebase_error(app):
     mock_db_ref = MagicMock()
+    mock_user_id = "test_user"
     mock_medication_id = "test_medication"
 
     with patch("firebase_admin.db.reference", return_value=mock_db_ref):
         mock_db_ref.get.side_effect = FirebaseError(8, "test")
         with pytest.raises(FirebaseError):
-            get_medication(mock_medication_id)
+            get_medication(mock_user_id, mock_medication_id)
 
 
 def test_get_medication_when_medication_is_not_found_raise_resource_not_found_error(app):
     mock_db_ref = MagicMock()
+    mock_user_id = "test_user"
     mock_medication_id = "test_medication"
 
     with patch("firebase_admin.db.reference", return_value=mock_db_ref):
         mock_db_ref.get.return_value = None
         with pytest.raises(ResourceNotFoundError):
-            get_medication(mock_medication_id)
+            get_medication(mock_user_id, mock_medication_id)
 
 
 def test_create_medication_when_medication_is_created_return_medication(app):
@@ -198,6 +201,7 @@ def test_create_medication_when_set_fails_raise_firebase_error(app):
 
 def test_update_medication_when_medication_is_updated_return_medication(app):
     mock_db_ref = MagicMock()
+    mock_user_id = "test_user"
     mock_medication_id = "test_medication"
     mock_medication_json_dict = {
         "dosage": "Test Dosage",
@@ -218,7 +222,7 @@ def test_update_medication_when_medication_is_updated_return_medication(app):
     with patch("firebase_admin.db.reference", return_value=mock_db_ref):
         mock_db_ref.child.return_value.update.return_value = None
 
-        updated_medication_data = update_medication(mock_medication_id, mock_medication_json_dict)
+        updated_medication_data = update_medication(mock_user_id, mock_medication_id, mock_medication_json_dict)
 
         assert mock_db_ref.child.called_once_with(mock_medication_id)
         assert mock_db_ref.child.return_value.set.called_once_with(mock_updated_data)
@@ -226,17 +230,19 @@ def test_update_medication_when_medication_is_updated_return_medication(app):
 
 
 def test_update_medication_when_no_valid_data_to_be_updated_raise_invalid_request_error(app):
+    mock_user_id = "test_user"
     mock_medication_id = "test_medication"
     mock_medication_json_dict = {
         "invalid_key": "invalid value"
     }
 
     with pytest.raises(InvalidRequestError):
-        update_medication(mock_medication_id, mock_medication_json_dict)
+        update_medication(mock_user_id, mock_medication_id, mock_medication_json_dict)
 
 
 def test_update_medication_when_no_valid_schedule_data_dont_update_schedule(app):
     mock_db_ref = MagicMock()
+    mock_user_id = "test_user"
     mock_medication_id = "test_medication"
     mock_medication_json_dict = {
         "dosage": "Test Dosage",
@@ -251,7 +257,7 @@ def test_update_medication_when_no_valid_schedule_data_dont_update_schedule(app)
     with patch("firebase_admin.db.reference", return_value=mock_db_ref):
         mock_db_ref.child.return_value.update.return_value = None
 
-        updated_medication_data = update_medication(mock_medication_id, mock_medication_json_dict)
+        updated_medication_data = update_medication(mock_user_id, mock_medication_id, mock_medication_json_dict)
 
         assert mock_db_ref.child.called_once_with(mock_medication_id)
         assert mock_db_ref.child.return_value.set.called_once_with(mock_updated_data)
@@ -260,6 +266,7 @@ def test_update_medication_when_no_valid_schedule_data_dont_update_schedule(app)
 
 def test_update_medication_when_update_fails_raise_firebase_error(app):
     mock_db_ref = MagicMock()
+    mock_user_id = "test_user"
     mock_medication_id = "test_medication"
     mock_medication_json_dict = {
         "dosage": "Test Dosage",
@@ -268,35 +275,38 @@ def test_update_medication_when_update_fails_raise_firebase_error(app):
     with patch("firebase_admin.db.reference", return_value=mock_db_ref):
         mock_db_ref.update.side_effect = FirebaseError(8, "test")
         with pytest.raises(FirebaseError):
-            update_medication(mock_medication_id, mock_medication_json_dict)
+            update_medication(mock_user_id, mock_medication_id, mock_medication_json_dict)
 
 
 def test_delete_medication_when_medication_is_deleted_return_none(app):
     mock_db_ref = MagicMock()
+    mock_user_id = "test_user"
     mock_medication_id = "test_medication"
 
     with patch("firebase_admin.db.reference", return_value=mock_db_ref):
         mock_db_ref.delete.return_value = None
-        delete_medication(mock_medication_id)
+        delete_medication(mock_user_id, mock_medication_id)
         assert mock_db_ref.delete.called_once_with(mock_medication_id)
 
 
 def test_delete_medication_when_delete_fails_raise_firebase_error(app):
     mock_db_ref = MagicMock()
+    mock_user_id = "test_user"
     mock_medication_id = "test_medication"
 
     with patch("firebase_admin.db.reference", return_value=mock_db_ref):
         mock_db_ref.delete.side_effect = FirebaseError(8, "test")
         with pytest.raises(FirebaseError):
-            delete_medication(mock_medication_id)
+            delete_medication(mock_user_id, mock_medication_id)
 
 
 def test_delete_medication_when_medication_doesnt_exist_raise_resource_not_found_error(app):
     mock_db_ref = MagicMock()
+    mock_user_id = "test_user"
     mock_medication_id = "test_medication"
 
     with patch("firebase_admin.db.reference", return_value=mock_db_ref):
         mock_db_ref.delete.return_value = None
         mock_db_ref.delete.side_effect = ValueError()
         with pytest.raises(ValueError):
-            delete_medication(mock_medication_id)
+            delete_medication(mock_user_id, mock_medication_id)
