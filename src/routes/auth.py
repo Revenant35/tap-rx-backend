@@ -10,12 +10,22 @@ from flask import request, jsonify, Response, current_app
 
 load_dotenv()
 
+
 def firebase_auth_required(f):
+    """
+    Decorator to require Firebase Auth for a route.
+    Args:
+        f: The function to decorate.
+
+    Notes:
+        if FLASK_ENV is set to 'development', this decorator will bypass Firebase Auth.
+
+    Returns:
+        The decorated function.
+    """
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        # Check if running in development environment
         if os.getenv('FLASK_ENV') == 'development':
-            # Bypass Firebase Auth
             return f(*args, **kwargs)
 
         if not firebase_admin._apps:
@@ -40,32 +50,45 @@ def firebase_auth_required(f):
     return decorated_function
 
 
-def verify_user(user_id: str, request: flask.Request) -> tuple[bool, Optional[tuple[Response, int]]]:
+def get_user_id(req: flask.Request) -> Optional[str]:
+    """
+    Retrieves the user ID from the request.
+
+    Args:
+        req: (flask.Request) The request object.
+
+    Returns:
+        Optional[str]: The user ID if found, otherwise None.
+    """
+    try:
+        return req.decoded_token['user_id']
+    except (AttributeError, KeyError, ValueError, TypeError):
+        return None
+
+
+def verify_user(user_id: str, req: flask.Request) -> tuple[bool, Optional[tuple[Response, int]]]:
     """
     Verifies that the user making the request is the same as the user being requested.
 
     Args:
         user_id: (str) Username for user.
-        request: (flask.Request) The request object.
+        req: (flask.Request) The request object.
+
+    Notes:
+        if FLASK_ENV is set to 'development', this function will bypass Firebase Auth.
 
     Returns:
         tuple[bool, Optional[tuple[Response, int]]]: A tuple containing a boolean representing whether the user was
         verified and an optional tuple of Response and int representing the error response and status code if there was
         an error.
     """
-    # Check if running in development environment
     if os.getenv('FLASK_ENV') == 'development':
-        # Bypass Firebase Auth
         return True, None
 
-    try:
-        requesting_user_id = request.decoded_token['user_id']
-    except (AttributeError, KeyError, ValueError, TypeError) as ex:
-        current_app.logger.error(f"Invalid request JSON: {ex}")
-        return False, (jsonify({"message": "Invalid request"}), 400)
+    requesting_user_id = get_user_id(req)
 
-    if user_id != requesting_user_id:
+    if requesting_user_id is None or user_id != requesting_user_id:
         current_app.logger.error(f"Insufficient permissions: {requesting_user_id} != {user_id}")
         return False, (jsonify({"message": "Insufficient permissions"}), 403)
-    else:
-        return True, None
+
+    return True, None
