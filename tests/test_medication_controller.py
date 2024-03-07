@@ -38,15 +38,15 @@ def test_get_medication_when_get_fails_raise_firebase_error(app):
             get_medication(mock_user_id, mock_medication_id)
 
 
-def test_get_medication_when_medication_is_not_found_raise_resource_not_found_error(app):
+def test_get_medication_when_medication_is_not_found_return_none(app):
     mock_db_ref = MagicMock()
     mock_user_id = "test_user"
     mock_medication_id = "test_medication"
 
     with patch("firebase_admin.db.reference", return_value=mock_db_ref):
         mock_db_ref.get.return_value = None
-        with pytest.raises(ResourceNotFoundError):
-            get_medication(mock_user_id, mock_medication_id)
+        medication = get_medication(mock_user_id, mock_medication_id)
+        assert medication is None
 
 
 def test_create_medication_when_medication_is_created_return_medication(app):
@@ -85,7 +85,7 @@ def test_create_medication_when_medication_is_created_return_medication(app):
         mock_db_ref.push.return_value = MagicMock(key=mock_medication_id)
         mock_db_ref.child.return_value.set.return_value = None
 
-        created_medication = create_medication(mock_json_dict)
+        created_medication = create_medication(mock_user_id, mock_json_dict)
 
         assert mock_db_ref.push.called_once()
         assert mock_db_ref.child.called_once_with(mock_medication_id)
@@ -97,13 +97,14 @@ def test_create_medication_when_medication_is_created_return_medication(app):
 
 
 def test_create_medication_when_invalid_request_raise_invalid_request_error(app):
+    user_id = "test_user"
     mock_name = "Test Medication"
     mock_json_dict = {
         "name": mock_name,
     }
 
     with pytest.raises(InvalidRequestError):
-        create_medication(mock_json_dict)
+        create_medication(user_id, mock_json_dict)
 
 
 def test_create_medication_when_get_fails_raise_firebase_error(app):
@@ -120,7 +121,7 @@ def test_create_medication_when_get_fails_raise_firebase_error(app):
     with patch("firebase_admin.db.reference", return_value=mock_db_ref):
         mock_db_ref.get.side_effect = FirebaseError(8, "test")
         with pytest.raises(FirebaseError):
-            create_medication(mock_json_dict)
+            create_medication(mock_user_id, mock_json_dict)
 
 
 def test_create_medication_when_user_doesnt_exist_raise_resource_not_found_error(app):
@@ -137,7 +138,7 @@ def test_create_medication_when_user_doesnt_exist_raise_resource_not_found_error
     with patch("firebase_admin.db.reference", return_value=mock_db_ref):
         mock_db_ref.get.return_value = None
         with pytest.raises(ResourceNotFoundError):
-            create_medication(mock_json_dict)
+            create_medication(mock_user_id, mock_json_dict)
 
 
 def test_create_medication_when_push_fails_raise_firebase_error(app):
@@ -156,7 +157,7 @@ def test_create_medication_when_push_fails_raise_firebase_error(app):
         mock_db_ref.get.return_value = MagicMock()
         mock_db_ref.push.side_effect = FirebaseError(8, "test")
         with pytest.raises(FirebaseError):
-            create_medication(mock_json_dict)
+            create_medication(mock_user_id, mock_json_dict)
 
 
 def test_create_medication_when_medication_to_be_stored_is_invalid_raise_value_error(app):
@@ -176,7 +177,7 @@ def test_create_medication_when_medication_to_be_stored_is_invalid_raise_value_e
         mock_db_ref.push.return_value = MagicMock(key=mock_medication_id)
         mock_db_ref.set.side_effect = ValueError()
         with pytest.raises(ValueError):
-            create_medication(mock_json_dict)
+            create_medication(mock_user_id, mock_json_dict)
 
 
 def test_create_medication_when_set_fails_raise_firebase_error(app):
@@ -196,7 +197,7 @@ def test_create_medication_when_set_fails_raise_firebase_error(app):
         mock_db_ref.push.return_value = MagicMock(key=mock_medication_id)
         mock_db_ref.set.side_effect = FirebaseError(8, "test")
         with pytest.raises(FirebaseError):
-            create_medication(mock_json_dict)
+            create_medication(mock_user_id, mock_json_dict)
 
 
 def test_update_medication_when_medication_is_updated_return_medication(app):
