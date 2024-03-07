@@ -92,7 +92,7 @@ def create_user(user_id: str, user_json_dict: dict) -> User:
         first_name = user_json_dict["first_name"]
         last_name = user_json_dict["last_name"]
         phone = user_json_dict.get("phone", None)
-        medications = user_json_dict.get("medications", [])
+        medications = user_json_dict.get("medications", {})
         dependents = user_json_dict.get("dependents", [])
         monitoring_users = user_json_dict.get("monitoring_users", [])
         monitored_by_users = user_json_dict.get("monitored_by_users", [])

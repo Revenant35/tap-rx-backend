@@ -2,7 +2,7 @@ Medication:
   type: object
   properties:
     id:
-      type: integer
+      type: string
       description: The medication's unique identifier
     name:
       type: string
@@ -33,9 +33,13 @@ Medication:
 
 User:
   type: object
+  required:
+    - user_id
+    - first_name
+    - last_name
   properties:
     user_id:
-      type: integer
+      type: string
       description: The user's unique identifier
       example: "i3t4g3v3f9g3"
     first_name:
@@ -51,12 +55,22 @@ User:
       description: The phone number of the user
       example: +1 (123) 456-7890
     medications:
-      type: array
-      description: A list of medications the user is taking
-      items:
-        type: string
-        description: The ID of the medication
-      example: ["01FemsE003W_RG", "TKC94WPpGLHFW", "-Ljg3t3v3f9g3"]
+      type: object
+      description: Object containing medication ID keys with associated medication objects as values.
+      additionalProperties:
+        $ref: '#/definitions/Medication'
+      example: {
+        "01FemsE003W_RG": {
+          "id": "01FemsE003W_RG",
+          "name": "Lisinopril",
+          "dosage": "20mg"
+        },
+        "TKC94WPpGLHFW": {
+          "id": "TKC94WPpGLHFW",
+          "name": "Metformin",
+          "dosage": "500mg"
+        }
+      }
 #    dependents:
 #      type: array
 #      description: A list of dependents the user is responsible for

@@ -21,17 +21,17 @@ def handle_get_medications():
         - medications
     parameters:
         - name: page
-            in: query
-            type: integer
-            required: false
-            description: The page number to retrieve
-            default: 1
+          in: query
+          type: integer
+          required: false
+          description: The page number to retrieve
+          default: 1
         - name: limit
-            in: query
-            type: integer
-            required: false
-            description: The number of medications to retrieve, max limit of 50
-            default: 50
+          in: query
+          type: integer
+          required: false
+          description: The number of medications to retrieve, max limit of 50
+          default: 50
     responses:
         200:
             description: A list of medications and the total number of medications
@@ -93,10 +93,10 @@ def handle_get_medication(medication_id):
         - medications
     parameters:
         - name: medication_id
-            in: path
-            type: string
-            required: true
-            description: The ID of the medication
+          in: path
+          type: string
+          required: true
+          description: The ID of the medication
     responses:
         200:
             description: The medication
@@ -157,10 +157,10 @@ def handle_create_medication():
         - medications
     parameters:
         - in: body
-            name: body
-            required: true
-            schema:
-                $ref: '#/definitions/Medication'
+          name: body
+          required: true
+          schema:
+            $ref: '#/definitions/Medication'
     responses:
         201:
             description: Medication created successfully
@@ -225,15 +225,15 @@ def handle_update_medication(medication_id):
         - medications
     parameters:
         - name: medication_id
-            in: path
-            type: string
-            required: true
-            description: The ID of the medication
+          in: path
+          type: string
+          required: true
+          description: The ID of the medication
         - in: body
-            name: body
-            required: true
-            schema:
-                $ref: '#/definitions/Medication'
+          name: body
+          required: true
+          schema:
+              $ref: '#/definitions/Medication'
     responses:
         200:
             description: Medication updated successfully
@@ -306,10 +306,10 @@ def handle_delete_medication(medication_id):
         - medications
     parameters:
         - name: medication_id
-            in: path
-            type: string
-            required: true
-            description: The ID of the medication
+          in: path
+          type: string
+          required: true
+          description: The ID of the medication
     responses:
         200:
             description: Medication deleted successfully
