@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from src.models.Medication import Medication
+
 
 class User:
     user_id: str
@@ -17,7 +19,7 @@ class User:
             first_name: str,
             last_name: str,
             phone: str | None = None,
-            medications: list[str] = None,
+            medications: list[Medication] = None,
             dependents: list[str] = None,
             monitoring_users: list[str] = None,
             monitored_by_users: list[str] = None
@@ -30,7 +32,7 @@ class User:
             first_name: {str} The user's first name.
             last_name: {str} The user's last name.
             phone: {str} The user's phone number. Optional.
-            medications: {list[str]} The user's medications' UIDS. Optional.
+            medications: {list[Medication]} The user's Medication objects. Optional.
             dependents: {list[str]} The user's dependents' UIDs. Optional.
             monitoring_users: {list[str]} The UIDs of the users this user is monitoring. Optional.
             monitored_by_users: {list[str]} The UIDs of the users monitoring this user. Optional.

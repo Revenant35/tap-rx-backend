@@ -44,7 +44,7 @@ def test_get_medication_when_medication_is_not_found_return_none(app):
     mock_medication_id = "test_medication"
 
     with patch("firebase_admin.db.reference", return_value=mock_db_ref):
-        mock_db_ref.get.return_value = None
+        mock_db_ref.get.return_value = {}
         medication = get_medication(mock_user_id, mock_medication_id)
         assert medication is None
 
@@ -72,7 +72,6 @@ def test_create_medication_when_medication_is_created_return_medication(app):
 
     medication = Medication(
         medication_id=mock_medication_id,
-        user_id=mock_user_id,
         name=mock_name,
         container_id=mock_container_id,
         nickname=mock_nickname,
@@ -100,7 +99,7 @@ def test_create_medication_when_invalid_request_raise_invalid_request_error(app)
     user_id = "test_user"
     mock_name = "Test Medication"
     mock_json_dict = {
-        "name": mock_name,
+        "invalid_key": "invalid value"
     }
 
     with pytest.raises(InvalidRequestError):
@@ -284,7 +283,8 @@ def test_delete_medication_when_medication_is_deleted_return_none(app):
     mock_user_id = "test_user"
     mock_medication_id = "test_medication"
 
-    with patch("firebase_admin.db.reference", return_value=mock_db_ref):
+    with patch("firebase_admin.db.reference", return_value=mock_db_ref), \
+            patch("src.controllers.medication_controller.get_medication", return_value=MagicMock()):
         mock_db_ref.delete.return_value = None
         delete_medication(mock_user_id, mock_medication_id)
         assert mock_db_ref.delete.called_once_with(mock_medication_id)
@@ -295,7 +295,8 @@ def test_delete_medication_when_delete_fails_raise_firebase_error(app):
     mock_user_id = "test_user"
     mock_medication_id = "test_medication"
 
-    with patch("firebase_admin.db.reference", return_value=mock_db_ref):
+    with patch("firebase_admin.db.reference", return_value=mock_db_ref), \
+            patch("src.controllers.medication_controller.get_medication", return_value=MagicMock()):
         mock_db_ref.delete.side_effect = FirebaseError(8, "test")
         with pytest.raises(FirebaseError):
             delete_medication(mock_user_id, mock_medication_id)

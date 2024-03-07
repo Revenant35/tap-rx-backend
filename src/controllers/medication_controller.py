@@ -110,7 +110,6 @@ def create_medication(user_id: str, medication_json_dict: dict) -> Medication:
     """
     try:
         name = medication_json_dict["name"]
-        dependent_id = medication_json_dict.get("dependent_id", None)
         container_id = medication_json_dict.get("container_id", None)
         nickname = medication_json_dict.get("nickname", None)
         dosage = medication_json_dict.get("dosage", None)
@@ -138,9 +137,7 @@ def create_medication(user_id: str, medication_json_dict: dict) -> Medication:
 
     new_medication = Medication(
         medication_id=medication_id,
-        user_id=user_id,
         name=name,
-        dependent_id=dependent_id,
         container_id=container_id,
         nickname=nickname,
         dosage=dosage,

@@ -24,7 +24,8 @@ def app():
 
     with patch("src.database.firebase_config.initialize_firebase_app"), \
             patch("firebase_admin.credentials.Certificate"), \
-            patch("firebase_admin.initialize_app"):
+            patch("firebase_admin.initialize_app"), \
+            patch("src.app.init_swagger"):
         app = create_app()
         app.config.update({
             "TESTING": True

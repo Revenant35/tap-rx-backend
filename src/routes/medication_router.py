@@ -128,11 +128,11 @@ def handle_get_medication(medication_id):
 
     try:
         medication = get_medication(requesting_user_id, medication_id)
-    except ResourceNotFoundError:
-        return jsonify({
-            "success": False,
-            "message": "Medication not found"
-        }), 404
+        if medication is None:
+            return jsonify({
+                "success": False,
+                "message": "Medication not found"
+            }), 404
     except (ValueError, FirebaseError):
         return jsonify({
             "success": False,
@@ -148,7 +148,7 @@ def handle_get_medication(medication_id):
 
 @medications_bp.route('/', methods=['POST'])
 @firebase_auth_required
-@validate_json("user_id", "name")
+@validate_json("name")
 def handle_create_medication():
     """
     Create a new medication
@@ -264,11 +264,11 @@ def handle_update_medication(medication_id):
 
     try:
         medication = get_medication(requesting_user_id, medication_id)
-    except ResourceNotFoundError:
-        return jsonify({
-            "success": False,
-            "message": "Medication not found"
-        }), 404
+        if medication is None:
+            return jsonify({
+                "success": False,
+                "message": "Medication not found"
+            }), 404
     except (ValueError, FirebaseError):
         return jsonify({
             "success": False,

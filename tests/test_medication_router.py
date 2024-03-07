@@ -11,7 +11,7 @@ from src.models.errors.resource_not_found_error import ResourceNotFoundError
 def test_handle_get_medication_when_medication_is_found_return_200(app, client):
     medication_id = "test_medication_id"
     user_id = "test_user"
-    mock_medication = Medication(user_id=user_id, name="test_medication", medication_id=medication_id)
+    mock_medication = Medication(name="test_medication", medication_id=medication_id)
 
     with patch("src.routes.medication_router.get_user_id", return_value=user_id), \
             patch("src.routes.medication_router.get_medication", return_value=mock_medication):
@@ -44,7 +44,7 @@ def test_handle_get_medication_when_firebase_fails_return_500(app, client):
 
 def test_handle_get_medication_when_user_is_not_verified_return_403(app, client):
     medication_id = "test_medication_id"
-    mock_medication = Medication(user_id="test_user", name="test_medication", medication_id=medication_id)
+    mock_medication = Medication(name="test_medication", medication_id=medication_id)
 
     with patch("src.routes.medication_router.get_medication", return_value=mock_medication), \
             patch("src.routes.medication_router.get_user_id", return_value=None):
@@ -77,7 +77,7 @@ def test_handle_create_medication_when_medication_is_created_return_201(app, cli
         assert response.json["data"] == mock_medication_data
 
 
-def test_handle_create_user_when_user_id_is_missing_return_400(app, client):
+def test_handle_create_medication_when_user_id_is_missing_return_400(app, client):
     mock_request_data = {
         "name": "test_medication",
     }
@@ -111,7 +111,7 @@ def test_handle_create_medication_when_invalid_medication_data_return_400(app, c
         assert response.status_code == 400
 
 
-def test_handle_create_medication_when_user_doesnt_exist_return_404(app, client):
+def test_handle_create_medication_when_user_doesnt_exist_return_403(app, client):
     user_id = "test_user"
     mock_request_data = {
         "user_id": user_id,
@@ -121,7 +121,7 @@ def test_handle_create_medication_when_user_doesnt_exist_return_404(app, client)
     with patch("src.routes.medication_router.get_user_id", return_value=user_id), \
             patch("src.routes.medication_router.create_medication", side_effect=ResourceNotFoundError):
         response = client.post("/medications/", json=mock_request_data)
-        assert response.status_code == 404
+        assert response.status_code == 403
 
 
 def test_handle_create_medication_when_medication_fails_to_be_created_return_500(app, client):
@@ -153,7 +153,7 @@ def test_handle_create_medication_when_new_medication_node_is_invalid_return_500
 def test_handle_update_medication_when_medication_is_updated_return_200(app, client):
     user_id = "test_user"
     medication_id = "test_medication_id"
-    mock_medication = Medication(user_id=user_id, name="test_medication", medication_id=medication_id)
+    mock_medication = Medication(name="test_medication", medication_id=medication_id)
     mock_medication_data = {
         "name": "new_medication_name",
         "invalid_key": "invalid value"
@@ -202,7 +202,7 @@ def test_handle_update_medication_when_user_is_not_verified_return_403(app, clie
     mock_medication_data = {
         "name": "new_medication_name",
     }
-    mock_medication = Medication(user_id="test_user", name="test_medication", medication_id=medication_id)
+    mock_medication = Medication(name="test_medication", medication_id=medication_id)
 
     with patch("src.routes.medication_router.get_medication", return_value=mock_medication), \
             patch("src.routes.medication_router.get_user_id", return_value=None):
@@ -216,7 +216,7 @@ def test_handle_update_medication_when_invalid_medication_data_return_400(app, c
     mock_medication_data = {
         "Invalid key": "Invalid"
     }
-    mock_medication = Medication(user_id="test_user", name="test_medication", medication_id=medication_id)
+    mock_medication = Medication(name="test_medication", medication_id=medication_id)
 
     with patch("src.routes.medication_router.get_medication", return_value=mock_medication), \
             patch("src.routes.medication_router.get_user_id", return_value=user_id), \
@@ -231,7 +231,7 @@ def test_handle_update_medication_when_update_fails_return_500(app, client):
     mock_medication_data = {
         "name": "new_medication_name",
     }
-    mock_medication = Medication(user_id="test_user", name="test_medication", medication_id=medication_id)
+    mock_medication = Medication(name="test_medication", medication_id=medication_id)
 
     with patch("src.routes.medication_router.get_medication", return_value=mock_medication), \
             patch("src.routes.medication_router.get_user_id", return_value=user_id), \
@@ -246,7 +246,7 @@ def test_handle_update_medication_when_update_node_is_invalid_return_500(app, cl
     mock_medication_data = {
         "name": "new_medication_name",
     }
-    mock_medication = Medication(user_id="test_user", name="test_medication", medication_id=medication_id)
+    mock_medication = Medication(name="test_medication", medication_id=medication_id)
 
     with patch("src.routes.medication_router.get_medication", return_value=mock_medication), \
             patch("src.routes.medication_router.get_user_id", return_value=user_id), \
@@ -258,15 +258,15 @@ def test_handle_update_medication_when_update_node_is_invalid_return_500(app, cl
 def test_handle_delete_medication_when_medication_is_deleted_return_200(app, client):
     user_id = "test_user"
     medication_id = "test_medication_id"
-    mock_medication = Medication(user_id=user_id, name="test_medication", medication_id=medication_id)
+    mock_medication = Medication(name="test_medication", medication_id=medication_id)
 
     with patch("src.routes.medication_router.get_user_id", return_value=user_id), \
-            patch("src.routes.medication_router.get_medication", return_value=mock_medication), \
+            patch("src.routes.medication_router.get_medication", side_effect=[mock_medication, None]), \
             patch("src.routes.medication_router.delete_medication", return_value=None):
         response = client.delete(f"/medications/{medication_id}")
         assert response.status_code == 200
         assert response.json["success"] is True
-        assert response.json["message"] == "Medication deleted"
+        assert response.json["message"] == "Medication deleted successfully"
 
 
 def test_handle_delete_medication_when_medication_is_not_found_return_404(app, client):
@@ -274,7 +274,7 @@ def test_handle_delete_medication_when_medication_is_not_found_return_404(app, c
     medication_id = "test_medication_id"
 
     with patch("src.routes.medication_router.get_user_id", return_value=user_id), \
-            patch("src.routes.medication_router.delete_medication", side_effect=ResourceNotFoundError):
+            patch("src.routes.medication_router.get_medication", return_value=None):
         response = client.delete(f"/medications/{medication_id}")
         assert response.status_code == 404
 
