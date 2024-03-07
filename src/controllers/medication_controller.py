@@ -29,10 +29,9 @@ def get_medication(user_id: str, medication_id: str) -> Medication or None:
         current_app.logger.error(f"Firebase failure while trying to retrieve medication {medication_id}: {ex}")
         raise ex
 
-    if not isinstance(medication_data, dict):
-        raise ValueError(f"Expected a dictionary from Firebase, but got a different type. Got: {medication_data}")
-
     if medication_data:
+        if not isinstance(medication_data, dict):
+            raise ValueError(f"Expected a dictionary from Firebase, but got a different type. Got: {medication_data}")
         return Medication.from_dict(medication_data)
     else:
         return None
