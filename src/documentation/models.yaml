@@ -11,6 +11,32 @@ Medication:
       type: string
       description: The prescribed dosage
 
+MedicationEvent:
+  type: object
+  required:
+    - medication_event_id
+    - medication_id
+    - timestamp
+  properties:
+    medication_event_id:
+      type: string
+      description: The medication event's unique identifier
+      example: "01FemsE003W_RG"
+    medication_id:
+      type: string
+      description: The ID of the medication to be taken
+      example: "01FemsE003W_RG"
+    timestamp:
+      type: string
+      format: date-time
+      description: The time the medication was taken
+      example: "2021-01-01T12:00:00Z"
+    dosage:
+      type: string
+      description: The dosage of the medication taken
+      example: "20mg"
+
+
 #Dependent:
 #  type: object
 #  properties:
