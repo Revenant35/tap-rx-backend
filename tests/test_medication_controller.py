@@ -203,20 +203,18 @@ def test_update_medication_when_medication_is_updated_return_medication(app):
     mock_db_ref = MagicMock()
     mock_user_id = "test_user"
     mock_medication_id = "test_medication"
+    mock_schedule = {
+        "minute": "0",
+        "hour": "8"
+    }
     mock_medication_json_dict = {
         "dosage": "Test Dosage",
-        "schedule": {
-            "minute": "0",
-            "hour": "8"
-        },
+        "schedule": mock_schedule,
         "invalid_key": "invalid value"
     }
     mock_updated_data = {
         "dosage": "Test Dosage",
-        "schedule": {
-            "minute": "0",
-            "hour": "8"
-        },
+        "schedule": Schedule.from_dict(mock_schedule).to_dict()
     }
 
     with patch("firebase_admin.db.reference", return_value=mock_db_ref):
