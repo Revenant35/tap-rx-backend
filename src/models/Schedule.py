@@ -1,30 +1,36 @@
 from __future__ import annotations
 
+default_minute = "0"
+default_hour = "0"
+default_day_of_month = "*"
+default_month = "*"
+default_day_of_week = "*"
+
 
 class Schedule:
-    minute: str | None
-    hour: str | None
-    day_of_month: str | None
-    month: str | None
-    day_of_week: str | None
+    minute: str
+    hour: str
+    day_of_month: str
+    month: str
+    day_of_week: str
 
     def __init__(
             self,
-            minute: str | None = None,
-            hour: str | None = None,
-            day_of_month: str | None = None,
-            month: str | None = None,
-            day_of_week: str | None = None
+            minute: str = default_minute,
+            hour: str = default_hour,
+            day_of_month: str = default_day_of_month,
+            month: str = default_month,
+            day_of_week: str = default_day_of_week,
     ):
         """
         Initialize a new medication object
 
         Args:
-            minute: {str} The minute the medication is scheduled. Optional.
-            hour: {str} The hour the medication is scheduled. Optional.
-            day_of_month: {str} The day of the month the medication is scheduled. Optional.
-            month: {str} The month the medication is scheduled. Optional.
-            day_of_week: {str} The day of the week the medication is scheduled. Optional.
+            minute: {str} The minute the medication is scheduled.
+            hour: {str} The hour the medication is scheduled.
+            day_of_month: {str} The day of the month the medication is scheduled.
+            month: {str} The month the medication is scheduled.
+            day_of_week: {str} The day of the week the medication is scheduled.
         """
         self.minute = minute
         self.hour = hour
@@ -45,13 +51,13 @@ class Schedule:
             return None
 
         return Schedule(
-            minute=data.get("minute", None),
-            hour=data.get("hour", None),
-            day_of_month=data.get("day_of_month", None),
-            month=data.get("month", None),
-            day_of_week=data.get("day_of_week", None)
+            minute=data.get("minute", default_minute),
+            hour=data.get("hour", default_hour),
+            day_of_month=data.get("day_of_month", default_day_of_month),
+            month=data.get("month", default_month),
+            day_of_week=data.get("day_of_week", default_day_of_week)
         )
 
     def to_dict(self):
         schedule_fields = ["minute", "hour", "day_of_month", "month", "day_of_week"]
-        return {field: getattr(self, field, None) for field in schedule_fields if getattr(self, field, None) is not None}
+        return {field: getattr(self, field) for field in schedule_fields}

@@ -33,17 +33,16 @@ def get_medication_event(user_id: str, medication_id: str, medication_event_id: 
         current_app.logger.error(
             f"Failed to retrieve medication event {medication_event_id} for medication {medication_id}: {ex}"
         )
-        raise FirebaseError
-
-    med_event = MedicationEvent.from_dict(medication_event_data)
-    if med_event.user_id != user_id:
-        raise InvalidRequestError("User does not have access to this medication event")
+        raise FirebaseError(500, "Failed to retrieve medication event")
 
     if medication_event_data:
         if not isinstance(medication_event_data, dict):
             raise ValueError(
                 f"Expected a dictionary from Firebase, but got a different type. Got: {medication_event_data}"
             )
+        med_event = MedicationEvent.from_dict(medication_event_data)
+        if med_event.user_id != user_id:
+            raise InvalidRequestError("User does not have access to this medication event")
         return MedicationEvent.from_dict(medication_event_data)
     else:
         return None

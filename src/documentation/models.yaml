@@ -1,15 +1,38 @@
 Medication:
   type: object
+  required:
+    - id
+    - name
   properties:
-    id:
+    medication_id:
       type: string
       description: The medication's unique identifier
+      example: "-NsMK8JberS0keRjlynV"
     name:
       type: string
       description: The name of the medication
+      example: "Allegra"
     dosage:
       type: string
       description: The prescribed dosage
+      example: "180mg"
+    nickname:
+      type: string
+      description: A nickname for the medication
+      example: "Allergy Medication"
+    schedule:
+      type: object
+      description: The schedule for the medication event
+      additionalProperties:
+        $ref: '#/definitions/Schedule'
+      example: {
+        "minute": "0",
+        "hour": "8,17,22",
+        "day_of_month": "*",
+        "month": "*",
+        "day_of_week": "*"
+      }
+
 
 MedicationEvent:
   type: object
@@ -104,6 +127,37 @@ User:
           "dosage": "500mg"
         }
       }
+
+Schedule:
+  type: object
+  required:
+    - minute
+    - hour
+    - day_of_month
+    - month
+    - day_of_week
+  properties:
+    minute:
+      type: string
+      description: minute cron field. Defaults to "0" if not provided.
+      example: "0"
+    hour:
+      type: string
+      description: hour cron field. Defaults to "0" if not provided.
+      example: "8"
+    day_of_month:
+      type: string
+      description: day of month cron field. Defaults to "*" if not provided.
+      example: "*"
+    month:
+      type: string
+      description: month cron field. Defaults to "*" if not provided.
+      example: "*"
+    day_of_week:
+      type: string
+      description: day of week cron field. Defaults to "*" if not provided.
+      example: "*"
+
 #    dependents:
 #      type: array
 #      description: A list of dependents the user is responsible for
@@ -125,17 +179,3 @@ User:
 #        type: string
 #        description: The ID of the user
 #      example: ["qF922DLKlfmR20", "d9g3i3t4g3v3"]
-
-#Schedule:
-#  type: object
-#  properties:
-#    id:
-#      type: integer
-#      description: The schedule's unique identifier
-#    medication_id:
-#      type: integer
-#      description: The ID of the medication to be taken
-#    time:
-#      type: string
-#      format: date-time
-#      description: The time medication should be taken
