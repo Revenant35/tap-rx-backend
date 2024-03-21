@@ -24,20 +24,26 @@ def get_medication(user_id: str, medication_id: str) -> Medication or None:
         ValueError: If an error occurs while trying to retrieve the medication.
     """
     try:
-        medication_data = db.reference(f"/users/{user_id}/medications/{medication_id}").get()
+        medication_data = db.reference(
+            f"/users/{user_id}/medications/{medication_id}"
+        ).get()
     except (ValueError, FirebaseError) as ex:
-        current_app.logger.error(f"Firebase failure while trying to retrieve medication {medication_id}: {ex}")
+        current_app.logger.error(
+            f"Firebase failure while trying to retrieve medication {medication_id}: {ex}"
+        )
         raise ex
 
     if medication_data:
         if not isinstance(medication_data, dict):
-            raise ValueError(f"Expected a dictionary from Firebase, but got a different type. Got: {medication_data}")
+            raise ValueError(
+                f"Expected a dictionary from Firebase, but got a different type. Got: {medication_data}"
+            )
         return Medication.from_dict(medication_data)
     else:
         return None
 
 
-def get_medications(user_id: str, page=1, limit=50) -> (list[Medication], int) or None:
+def get_medications(user_id: str, page=1, limit=50) -> tuple[list[Medication], int]:
     """
     Retrieves medications for a user from the database.
 
@@ -64,24 +70,30 @@ def get_medications(user_id: str, page=1, limit=50) -> (list[Medication], int) o
     try:
         medications = db.reference(f"/users/{user_id}/medications").get()
     except (FirebaseError, ValueError) as ex:
-        current_app.logger.error(f"Firebase failure while trying to retrieve medications for user {user_id}: {ex}")
+        current_app.logger.error(
+            f"Firebase failure while trying to retrieve medications for user {user_id}: {ex}"
+        )
         raise ex
 
     if medications is None:
-        return [], None
+        return [], 0
 
     if not isinstance(medications, list):
-        raise ValueError(f"Expected a dictionary from Firebase, but got a different type. Got: {medications}")
+        raise ValueError(
+            f"Expected a list from Firebase, but got a different type. Got: {medications}"
+        )
 
     for medication in medications:
         if not isinstance(medication, dict):
-            raise ValueError(f"Expected a dictionary from Firebase, but got a different type. Got: {medication}")
+            raise ValueError(
+                f"Expected a dictionary from Firebase, but got a different type. Got: {medication}"
+            )
 
     # Paginate medications
     total_medications = len(medications)
 
     if page:
-        medications = medications[(page - 1) * limit:]
+        medications = medications[(page - 1) * limit :]
 
     medications = medications[:limit]
     medications = [Medication.from_dict(medication) for medication in medications]
@@ -120,7 +132,9 @@ def create_medication(user_id: str, medication_json_dict: dict) -> Medication:
     try:
         user_data = db.reference(f"/users/{user_id}").get()
     except FirebaseError as ex:
-        current_app.logger.error(f"Firebase failure while trying to retrieve user {user_id}: {ex}")
+        current_app.logger.error(
+            f"Firebase failure while trying to retrieve user {user_id}: {ex}"
+        )
         raise ex
 
     if user_data is None:
@@ -131,7 +145,9 @@ def create_medication(user_id: str, medication_json_dict: dict) -> Medication:
         # Generates UID for the medication and creates the empty node.
         medication_id = db.reference(f"/users/{user_id}/medications").push().key
     except FirebaseError as ex:
-        current_app.logger.error(f"Firebase failure while trying to generate medication ID: {ex}")
+        current_app.logger.error(
+            f"Firebase failure while trying to generate medication ID: {ex}"
+        )
         raise ex
 
     new_medication = Medication(
@@ -140,22 +156,30 @@ def create_medication(user_id: str, medication_json_dict: dict) -> Medication:
         container_id=container_id,
         nickname=nickname,
         dosage=dosage,
-        schedule=Schedule.from_dict(schedule)
+        schedule=Schedule.from_dict(schedule),
     )
 
     try:
-        db.reference(f"/users/{user_id}/medications/{medication_id}").set(new_medication.to_dict())
+        db.reference(f"/users/{user_id}/medications/{medication_id}").set(
+            new_medication.to_dict()
+        )
     except (ValueError, TypeError) as ex:
-        current_app.logger.error(f"Error while trying to store medication {medication_id}: {ex}")
+        current_app.logger.error(
+            f"Error while trying to store medication {medication_id}: {ex}"
+        )
         raise ex
     except FirebaseError as ex:
-        current_app.logger.error(f"Firebase failure while trying to store medication {medication_id}: {ex}")
+        current_app.logger.error(
+            f"Firebase failure while trying to store medication {medication_id}: {ex}"
+        )
         raise ex
 
     return new_medication
 
 
-def update_medication(user_id: str, medication_id: str, medication_json_dict: dict) -> dict:
+def update_medication(
+    user_id: str, medication_id: str, medication_json_dict: dict
+) -> dict:
     """
     Updates an existing medication in the database. Assumes medication does exist in the database, as that should have
     been checked already when retrieving the medication.
@@ -175,9 +199,7 @@ def update_medication(user_id: str, medication_id: str, medication_json_dict: di
 
     """
     updated_medication_data = {}
-    medication_keys_to_copy = [
-        "container_id", "name", "nickname", "dosage"
-    ]
+    medication_keys_to_copy = ["container_id", "name", "nickname", "dosage"]
     for key in medication_keys_to_copy:
         if key in medication_json_dict:
             updated_medication_data[key] = medication_json_dict[key]
@@ -191,12 +213,18 @@ def update_medication(user_id: str, medication_id: str, medication_json_dict: di
         raise InvalidRequestError("No valid fields to update")
 
     try:
-        db.reference(f"/users/{user_id}/medications/{medication_id}").update(updated_medication_data)
+        db.reference(f"/users/{user_id}/medications/{medication_id}").update(
+            updated_medication_data
+        )
     except ValueError as ex:
-        current_app.logger.error(f"Error while trying to update medication {medication_id}: {ex}")
+        current_app.logger.error(
+            f"Error while trying to update medication {medication_id}: {ex}"
+        )
         raise ex
     except FirebaseError as ex:
-        current_app.logger.error(f"Firebase failure while trying to update medication {medication_id}: {ex}")
+        current_app.logger.error(
+            f"Firebase failure while trying to update medication {medication_id}: {ex}"
+        )
         raise ex
 
     return updated_medication_data
@@ -209,7 +237,7 @@ def delete_medication(user_id: str, medication_id: str):
     Args:
         user_id: (str) The user's ID.
         medication_id: (str) The medication's ID.
-        
+
     Returns:
         None
 
@@ -221,7 +249,9 @@ def delete_medication(user_id: str, medication_id: str):
         medication = get_medication(user_id, medication_id)
 
     except (ValueError, FirebaseError) as ex:
-        current_app.logger.error(f"Error while trying to delete medication {medication_id}: {ex}")
+        current_app.logger.error(
+            f"Error while trying to delete medication {medication_id}: {ex}"
+        )
         raise ex
 
     if not medication:
@@ -230,9 +260,12 @@ def delete_medication(user_id: str, medication_id: str):
     try:
         db.reference(f"/users/{user_id}/medications/{medication_id}").delete()
     except ValueError as ex:
-        current_app.logger.error(f"Error while trying to delete medication {medication_id}: {ex}")
+        current_app.logger.error(
+            f"Error while trying to delete medication {medication_id}: {ex}"
+        )
         raise ex
     except FirebaseError as ex:
-        current_app.logger.error(f"Firebase failure while trying to delete medication {medication_id}: {ex}")
+        current_app.logger.error(
+            f"Firebase failure while trying to delete medication {medication_id}: {ex}"
+        )
         raise ex
-    

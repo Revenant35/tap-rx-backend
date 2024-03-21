@@ -1,17 +1,22 @@
 from firebase_admin.exceptions import FirebaseError
 from flask import Blueprint, request, jsonify
 
-from src.controllers.medication_controller import create_medication, get_medication, update_medication, \
-    delete_medication, get_medications
+from src.controllers.medication_controller import (
+    create_medication,
+    get_medication,
+    update_medication,
+    delete_medication,
+    get_medications,
+)
 from src.models.errors.invalid_request_error import InvalidRequestError
 from src.models.errors.resource_not_found_error import ResourceNotFoundError
 from src.routes.auth import firebase_auth_required, get_user_id
 from src.utils.validators import validate_json
 
-medications_bp = Blueprint('medications_bp', __name__)
+medications_bp = Blueprint("medications_bp", __name__)
 
 
-@medications_bp.route('/', methods=['GET'])
+@medications_bp.route("/", methods=["GET"])
 @firebase_auth_required
 def handle_get_medications():
     """
@@ -54,36 +59,40 @@ def handle_get_medications():
                         description: The total number of medications
         401:
             description: Unauthorized
+        403:
+            description: Forbidden
         500:
             description: Failed to fetch medications
     """
     requesting_user_id = get_user_id(request)
     if requesting_user_id is None:
-        return jsonify({
-            "success": False,
-            "message": "User not found"
-        }), 403
+        return jsonify({"success": False, "message": "User not found"}), 403
 
-    page = request.args.get('page', 1, type=int)
-    limit = request.args.get('limit', 50, type=int)
+    page = request.args.get("page", 1, type=int)
+    limit = request.args.get("limit", 50, type=int)
 
     try:
         (medications, total) = get_medications(requesting_user_id, page, limit)
     except (ValueError, FirebaseError):
-        return jsonify({
-            "success": False,
-            "message": "Failed to retrieve medications"
-        }), 500
+        return (
+            jsonify({"success": False, "message": "Failed to retrieve medications"}),
+            500,
+        )
 
-    return jsonify({
-        "success": True,
-        "message": "Medications found",
-        "data": medications,
-        "total": total,
-    }), 200
+    return (
+        jsonify(
+            {
+                "success": True,
+                "message": "Medications found",
+                "data": medications,
+                "total": total,
+            }
+        ),
+        200,
+    )
 
 
-@medications_bp.route('/<medication_id>', methods=['GET'])
+@medications_bp.route("/<medication_id>", methods=["GET"])
 @firebase_auth_required
 def handle_get_medication(medication_id):
     """
@@ -121,32 +130,31 @@ def handle_get_medication(medication_id):
     """
     requesting_user_id = get_user_id(request)
     if requesting_user_id is None:
-        return jsonify({
-            "success": False,
-            "message": "User not found"
-        }), 403
+        return jsonify({"success": False, "message": "User not found"}), 403
 
     try:
         medication = get_medication(requesting_user_id, medication_id)
         if medication is None:
-            return jsonify({
-                "success": False,
-                "message": "Medication not found"
-            }), 404
+            return jsonify({"success": False, "message": "Medication not found"}), 404
     except (ValueError, FirebaseError):
-        return jsonify({
-            "success": False,
-            "message": "Failed to retrieve medication"
-        }), 500
+        return (
+            jsonify({"success": False, "message": "Failed to retrieve medication"}),
+            500,
+        )
 
-    return jsonify({
-        "success": True,
-        "message": "Medication found",
-        "data": medication.to_dict()
-    }), 200
+    return (
+        jsonify(
+            {
+                "success": True,
+                "message": "Medication found",
+                "data": medication.to_dict(),
+            }
+        ),
+        200,
+    )
 
 
-@medications_bp.route('/', methods=['POST'])
+@medications_bp.route("/", methods=["POST"])
 @firebase_auth_required
 @validate_json("name")
 def handle_create_medication():
@@ -184,38 +192,35 @@ def handle_create_medication():
     """
     requesting_user_id = get_user_id(request)
     if requesting_user_id is None:
-        return jsonify({
-            "success": False,
-            "message": "User not found"
-        }), 403
+        return jsonify({"success": False, "message": "User not found"}), 403
 
     try:
         new_medication = create_medication(requesting_user_id, request.json)
     except InvalidRequestError as ex:
-        return jsonify({
-            "success": False,
-            "error": ex.message,
-            "message": "Invalid request"
-        }), 400
+        return (
+            jsonify(
+                {"success": False, "error": ex.message, "message": "Invalid request"}
+            ),
+            400,
+        )
     except ResourceNotFoundError:
-        return jsonify({
-            "success": False,
-            "message": "User not found"
-        }), 403
+        return jsonify({"success": False, "message": "User not found"}), 403
     except (ValueError, TypeError, FirebaseError) as e:
-        return jsonify({
-            "success": False,
-            "message": "Internal server error"
-        }), 500
+        return jsonify({"success": False, "message": "Internal server error"}), 500
 
-    return jsonify({
-        "success": True,
-        "message": "Medication created successfully",
-        "data": new_medication.to_dict()
-    }), 201
+    return (
+        jsonify(
+            {
+                "success": True,
+                "message": "Medication created successfully",
+                "data": new_medication.to_dict(),
+            }
+        ),
+        201,
+    )
 
 
-@medications_bp.route('/<medication_id>', methods=['PUT'])
+@medications_bp.route("/<medication_id>", methods=["PUT"])
 @firebase_auth_required
 def handle_update_medication(medication_id):
     """
@@ -257,46 +262,53 @@ def handle_update_medication(medication_id):
     """
     requesting_user_id = get_user_id(request)
     if requesting_user_id is None:
-        return jsonify({
-            "success": False,
-            "message": "User not found"
-        }), 403
+        return jsonify({"success": False, "message": "User not found"}), 403
 
     try:
         medication = get_medication(requesting_user_id, medication_id)
         if medication is None:
-            return jsonify({
-                "success": False,
-                "message": "Medication not found"
-            }), 404
+            return jsonify({"success": False, "message": "Medication not found"}), 404
     except (ValueError, FirebaseError):
-        return jsonify({
-            "success": False,
-            "message": "Failed to retrieve medication"
-        }), 500
+        return (
+            jsonify({"success": False, "message": "Failed to retrieve medication"}),
+            500,
+        )
 
     try:
-        updated_medication_data = update_medication(requesting_user_id, medication_id, request.json)
+        updated_medication_data = update_medication(
+            requesting_user_id, medication_id, request.json
+        )
     except InvalidRequestError as ex:
-        return jsonify({
-            "success": False,
-            "error": ex.message,
-            "message": "Invalid request"
-        }), 400
+        return (
+            jsonify(
+                {"success": False, "error": ex.message, "message": "Invalid request"}
+            ),
+            400,
+        )
     except (FirebaseError, ValueError):
-        return jsonify({
-            "success": False,
-            "message": "Failed to update medication",
-        }), 500
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "message": "Failed to update medication",
+                }
+            ),
+            500,
+        )
 
-    return jsonify({
-        "success": True,
-        "message": "Medication updated",
-        "data": updated_medication_data
-    }), 200
+    return (
+        jsonify(
+            {
+                "success": True,
+                "message": "Medication updated",
+                "data": updated_medication_data,
+            }
+        ),
+        200,
+    )
 
 
-@medications_bp.route('/<medication_id>', methods=['DELETE'])
+@medications_bp.route("/<medication_id>", methods=["DELETE"])
 @firebase_auth_required
 def handle_delete_medication(medication_id):
     """
@@ -331,48 +343,42 @@ def handle_delete_medication(medication_id):
     """
     requesting_user_id = get_user_id(request)
     if requesting_user_id is None:
-        return jsonify({
-            "success": False,
-            "message": "User not found"
-        }), 403
+        return jsonify({"success": False, "message": "User not found"}), 403
 
     try:
         initial_medication = get_medication(requesting_user_id, medication_id)
     except (ValueError, FirebaseError):
-        return jsonify({
-            "success": False,
-            "message": "Failed to retrieve medication"
-        }), 500
+        return (
+            jsonify({"success": False, "message": "Failed to retrieve medication"}),
+            500,
+        )
 
     if initial_medication is None:
-        return jsonify({
-            "success": False,
-            "message": "Medication not found"
-        }), 404
+        return jsonify({"success": False, "message": "Medication not found"}), 404
 
     try:
         delete_medication(requesting_user_id, medication_id)
     except (ValueError, FirebaseError):
-        return jsonify({
-            "success": False,
-            "message": "Failed to delete medication"
-        }), 500
+        return (
+            jsonify({"success": False, "message": "Failed to delete medication"}),
+            500,
+        )
 
     try:
         medication = get_medication(requesting_user_id, medication_id)
     except (ValueError, FirebaseError):
-        return jsonify({
-            "success": False,
-            "message": "Failed to delete medication"
-        }), 500
+        return (
+            jsonify({"success": False, "message": "Failed to delete medication"}),
+            500,
+        )
 
     if medication is None:
-        return jsonify({
-            "success": True,
-            "message": "Medication deleted successfully"
-        }), 200
+        return (
+            jsonify({"success": True, "message": "Medication deleted successfully"}),
+            200,
+        )
     else:
-        return jsonify({
-            "success": False,
-            "message": "Failed to delete medication"
-        }), 500
+        return (
+            jsonify({"success": False, "message": "Failed to delete medication"}),
+            500,
+        )

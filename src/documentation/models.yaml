@@ -37,25 +37,32 @@ MedicationEvent:
       example: "20mg"
 
 
-#Dependent:
-#  type: object
-#  properties:
-#    first_name:
-#      type: string
-#      description: The first name of the user
-#    last_name:
-#      type: string
-#      description: The last name of the user
-#    phone:
-#      type: string
-#      description: The phone number of the user
-#    medications:
-#      type: array
-#      description: A list of medications the user is taking
-#      items:
-#        type: string
-#        description: The ID of the medication
-#      example: ["01FemsE003W_RG", "TKC94WPpGLHFW", "-Ljg3t3v3f9g3"]
+Dependant:
+  type: object
+  properties:
+    id:
+      type: string
+      description: The unique identifier for this dependant
+      example: "ABCDEF123456"
+    first_name:
+      type: string
+      description: The first name of the user
+      example: "John"
+    last_name:
+      type: string
+      description: The last name of the user
+      example: "Doe"
+    phone:
+      type: string
+      description: The phone number of the user
+      example: "+1 (123) 234-4567"
+    medications:
+      type: array
+      description: A list of medications the user is taking
+      items:
+        type: string
+        description: The ID of the medication
+      example: ["01FemsE003W_RG", "TKC94WPpGLHFW", "-Ljg3t3v3f9g3"]
 
 User:
   type: object
