@@ -78,27 +78,27 @@ def get_medications(user_id: str, page=1, limit=50) -> tuple[list[Medication], i
     if medications is None:
         return [], 0
 
-    if not isinstance(medications, list):
+    if not isinstance(medications, dict):
         raise ValueError(
             f"Expected a list from Firebase, but got a different type. Got: {medications}"
         )
-
-    for medication in medications:
+    medications_list = list(medications.values())
+    for medication in medications_list:
         if not isinstance(medication, dict):
             raise ValueError(
                 f"Expected a dictionary from Firebase, but got a different type. Got: {medication}"
             )
 
     # Paginate medications
-    total_medications = len(medications)
+    total_medications = len(medications_list)
 
     if page:
-        medications = medications[(page - 1) * limit :]
+        medications_list = medications_list[(page - 1) * limit :]
 
-    medications = medications[:limit]
-    medications = [Medication.from_dict(medication) for medication in medications]
+    medications_list = medications_list[:limit]
+    medications_list = [Medication.from_dict(medication) for medication in medications_list]
 
-    return medications, total_medications
+    return medications_list, total_medications
 
 
 def create_medication(user_id: str, medication_json_dict: dict) -> Medication:

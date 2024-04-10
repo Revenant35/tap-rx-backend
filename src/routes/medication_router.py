@@ -84,7 +84,7 @@ def handle_get_medications():
             {
                 "success": True,
                 "message": "Medications found",
-                "data": medications,
+                "data": [medication.to_dict() for medication in medications],
                 "total": total,
             }
         ),
