@@ -28,7 +28,7 @@ def get_medication_event(user_id: str, medication_id: str, medication_event_id: 
         ValueError: If the medication event is not a dictionary.
     """
     try:
-        medication_event_data = db.reference(f"/medication_event/{medication_id}/{medication_event_id}").get()
+        medication_event_data = db.reference(f"/medication_events/{medication_id}/{medication_event_id}").get()
     except (ValueError, FirebaseError) as ex:
         current_app.logger.error(
             f"Failed to retrieve medication event {medication_event_id} for medication {medication_id}: {ex}"
@@ -82,7 +82,7 @@ def create_medication_event(user_id: str, medication_id: str, medication_event_j
         raise ResourceNotFoundError(f"Medication {medication_id} does not exist for user {user_id}")
 
     try:
-        medication_event_id = db.reference(f"/medication_event/{medication_id}").push().key
+        medication_event_id = db.reference(f"/medication_events/{medication_id}").push().key
     except FirebaseError as ex:
         current_app.logger.error(f"Firebase failure while trying to generate medication event ID: {ex}")
         raise ex
@@ -95,7 +95,7 @@ def create_medication_event(user_id: str, medication_id: str, medication_event_j
         dosage=dosage
     )
     try:
-        db.reference(f"/medication_event/{medication_id}/{medication_event_id}").set(new_medication_event.to_dict())
+        db.reference(f"/medication_events/{medication_id}/{medication_event_id}").set(new_medication_event.to_dict())
     except (ValueError, TypeError) as ex:
         current_app.logger.error(
             f"Failed to store medication event {medication_event_id} for medication {medication_id}: {ex}"
