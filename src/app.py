@@ -62,7 +62,7 @@ def create_app():
     app.register_blueprint(medications_bp, url_prefix="/medications")
     app.register_blueprint(users_bp, url_prefix="/users")
     app.register_blueprint(medication_events_bp, url_prefix="/medications")
-    app.register_blueprint(dependant_bp, url_prefix="/dependants")
+    app.register_blueprint(dependant_bp)
     register_error_handlers(app)
 
     return app
