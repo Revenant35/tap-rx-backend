@@ -86,6 +86,8 @@ def handle_get_dependant(user_id, dependant_id):
                 $ref: '#/definitions/Dependant'
         400:
             description: Bad request
+        404:
+            description: The dependant was not found
         500:
             description: Internal Server Error
     """
