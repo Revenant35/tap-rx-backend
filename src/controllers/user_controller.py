@@ -40,7 +40,7 @@ def get_users(start_at=None, limit=50):
     return users, next_page
 
 
-def get_user(user_id):
+def get_user(user_id) -> dict:
     """
     Fetches a user from the database.
     Args:

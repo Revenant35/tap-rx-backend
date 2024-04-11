@@ -37,7 +37,7 @@ class MedicationEvent:
             medication_event_id=data["medication_event_id"],
             user_id=data["user_id"],
             medication_id=data["medication_id"],
-            timestamp=data["timestamp"],
+            timestamp=datetime.fromisoformat(data["timestamp"]),
             dosage=data.get("dosage", None)
         )
 
