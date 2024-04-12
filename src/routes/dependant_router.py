@@ -10,7 +10,7 @@ from src.controllers.dependant_controller import (
 )
 from src.models.errors.invalid_request_error import InvalidRequestError
 from src.models.errors.resource_not_found_error import ResourceNotFoundError
-from src.routes.auth import firebase_auth_required, get_user_id, verify_user
+from src.routes.auth import firebase_auth_required, verify_user
 
 dependant_bp = Blueprint("dependant_bp", __name__)
 
@@ -51,7 +51,10 @@ def handle_get_dependants(user_id):
     try:
         dependants = get_dependants(user_id)
     except (ValueError, FirebaseError):
-        return "Internal Server Error", 500
+        return (
+            jsonify({"success": False, "message": "Failed to retrieve dependants"}),
+            500,
+        )
     except InvalidRequestError as ex:
         return jsonify({"error": ex.message}), 400
 
@@ -98,12 +101,23 @@ def handle_get_dependant(user_id, dependant_id):
     try:
         dependant = get_dependant(user_id, dependant_id)
     except (ValueError, FirebaseError):
-        return "Internal Server Error", 500
+        return (
+            jsonify({"success": False, "message": "Failed to retrieve dependants"}),
+            500,
+        )
     except InvalidRequestError as ex:
         return jsonify({"error": ex.message}), 400
 
     if dependant is None:
-        return "Not Found", 404
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "message": "Dependant not found",
+                }
+            ),
+            404,
+        )
     else:
         return jsonify(dependant.to_dict()), 200
 
@@ -143,6 +157,8 @@ def handle_create_dependant(user_id):
             description: The dependant was created
         400:
             description: Bad request
+        404:
+            description: The user was not found
         500:
             description: Internal Server Error
     """
@@ -153,14 +169,33 @@ def handle_create_dependant(user_id):
     try:
         create_dependant(user_id, request.json)
     except ResourceNotFoundError:
-        return "Not Found", 404
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "message": "User not found",
+                }
+            ),
+            404,
+        )
     except InvalidRequestError as ex:
         return jsonify({"error": ex.message}), 400
     except FirebaseError:
-        return "Internal Server Error", 500
+        return (
+            jsonify({"success": False, "message": "Failed to retrieve dependants"}),
+            500,
+        )
 
     else:
-        return "Created", 201
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "message": "Dependant created",
+                }
+            ),
+            201,
+        )
 
 
 @dependant_bp.put("/users/<user_id>/dependants/<dependant_id>")
@@ -200,7 +235,7 @@ def handle_update_dependant(user_id, dependant_id):
                 type: string
                 description: The phone number of the dependant
     responses:
-        204:
+        200:
             description: The dependant was updated
         400:
             description: Bad request
@@ -216,13 +251,32 @@ def handle_update_dependant(user_id, dependant_id):
     try:
         update_dependant(user_id, dependant_id, request.json)
     except ResourceNotFoundError:
-        return "Not Found", 404
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "message": "Dependant not found",
+                }
+            ),
+            404,
+        )
     except InvalidRequestError as ex:
         return jsonify({"error": ex.message}), 400
     except FirebaseError:
-        return "Internal Server Error", 500
+        return (
+            jsonify({"success": False, "message": "Failed to retrieve dependants"}),
+            500,
+        )
 
-    return "No Content", 204
+    return (
+        jsonify(
+            {
+                "success": True,
+                "message": "Dependant updated",
+            }
+        ),
+        200,
+    )
 
 
 @dependant_bp.delete("/users/<user_id>/dependants/<dependant_id>")
@@ -247,7 +301,7 @@ def handle_delete_dependant(user_id, dependant_id):
           schema:
             type: string
     responses:
-        204:
+        200:
             description: The dependant was deleted
         400:
             description: Bad request
@@ -263,10 +317,29 @@ def handle_delete_dependant(user_id, dependant_id):
     try:
         delete_dependant(user_id, dependant_id)
     except ResourceNotFoundError:
-        return "Not Found", 404
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "message": "Dependant not found",
+                }
+            ),
+            404,
+        )
     except InvalidRequestError as ex:
         return jsonify({"error": ex.message}), 400
     except FirebaseError:
-        return "Internal Server Error", 500
+        return (
+            jsonify({"success": False, "message": "Failed to retrieve dependants"}),
+            500,
+        )
 
-    return "No Content", 204
+    return (
+        jsonify(
+            {
+                "success": True,
+                "message": "Dependant deleted",
+            }
+        ),
+        200,
+    )
