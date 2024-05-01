@@ -7,37 +7,34 @@ from src.models.errors.resource_already_exists_error import ResourceAlreadyExist
 from src.models.errors.resource_not_found_error import ResourceNotFoundError
 
 
-def get_users(start_at=None, limit=50):
+def get_users(offset=0, limit=50, name=None):
     """
     Fetches a list of users from the database.
     Args:
-        start_at: (str) UID to start at, for cursor-based pagination
+        start_at: (int) Offset to start at, for cursor-based pagination
         limit: (int) Maximum number of users to fetch
+        name: (str) Filter users by name
 
     Returns:
-        list: List of user data, and the next page cursor (UID or None)
+        tuple: The list of users & the total number of users.
 
     Raises:
         ValueError, TypeError, exceptions.FirebaseError: If an error occurs while trying to fetch the users.
     """
-    db_ref = db.reference("/users")
+    # Fetch all users
+    users = list(db.reference("/users").order_by_key().get().items())
 
-    # Start at a specific user UID (if provided) and limit the number of results
-    query = db_ref.order_by_key()
-    if start_at:
-        query = query.start_at(start_at)
-    users_data = query.limit_to_first(limit + 1).get()  # Fetch one extra to check for next page
+    # Filter users by name
+    if name:
+        users = [user for user in users if name.lower() in user[1]["first_name"].lower() or name.lower() in user[1]["last_name"].lower()]
 
-    # Determine if there's a next page
-    users = list(users_data.items())
-    next_page = None
-    if len(users) > limit:
-        next_page = users[-1][0]  # Use the second last item's UID as the next page cursor
-        users = users[:-1]  # Remove the extra item
+    # Determine the total number of users
+    total_users = len(users)
 
-    users = [user[1] for user in users]
+    # Paginate the results
+    users = users[offset:offset + limit]
 
-    return users, next_page
+    return users, total_users
 
 
 def get_user(user_id) -> dict:

@@ -16,17 +16,23 @@ def handle_get_users():
     tags:
         - users
     parameters:
-      - name: start_at
-        in: query
-        type: string
-        required: false
-        description: UID to start at, for cursor-based pagination
-      - name: limit
+      - name: page
         in: query
         type: integer
         required: false
-        description: Number of users to retrieve, max limit of 50
+        description: Page number
+        default: 1
+      - name: page_size
+        in: query
+        type: integer
+        required: false
+        description: Number of users per page
         default: 50
+      - name: name
+        in: query
+        type: string
+        required: false
+        description: Filter users by name
     responses:
       200:
         description: A list of users and the UID for the next page
@@ -52,17 +58,40 @@ def handle_get_users():
       500:
         description: Failed to fetch users
     """
+
     # Fetch query parameters for pagination
-    start_at = request.args.get('start_at', None)  # UID to start at, for cursor-based pagination
-    limit = min(int(request.args.get('limit', 50)), 50)  # Enforce a max limit of 50
+    page = request.args.get('page', 1)  # Page number
+    page_size = request.args.get('page_size', 50)  # Number of users per page
+    name = request.args.get('name', None)  # Filter users by name
+
+    # Check that page and page_size are integers
+    try:
+        page = int(page)
+        page_size = int(page_size)
+    except ValueError:
+        return jsonify({
+            "success": False,
+            "message": "Invalid query parameters",
+            "error": "Page and page_size must be integers"
+        }), 400
+
+    if page < 1 or page_size < 1:
+        return jsonify({
+            "success": False,
+            "message": "Invalid query parameters",
+            "error": "Page and page_size must be greater than 0"
+        }), 400
+
+    offset = (page - 1) * page_size
+    limit = page_size
 
     try:
-        users, next_page = get_users(start_at, limit)
+        users, total = get_users(offset, limit, name)
         return jsonify({
             "success": True,
             "message": "Users found",
             "data": users,
-            "next_page": next_page  # UID to be used as start_at for the next page
+            "total": total
         }), 200
     except (ValueError, TypeError) as e:
         current_app.logger.critical(f"Failed to fetch users: {e}")
