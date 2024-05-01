@@ -398,7 +398,12 @@ def handle_update_medication_event(medication_id, medication_event_id):
         raise InvalidRequestError("User ID not included in authorization header.")
 
     # All defined errors are handled by the src/models/errors/error_handlers.py flask error handlers
-    updated_medication_event_data = update_medication_event(medication_id, medication_event_id, request.json)
+    updated_medication_event_data = update_medication_event(
+        user_id=requesting_user_id,
+        medication_id=medication_id,
+        medication_event_id=medication_event_id,
+        medication_event_json_dict=request.json
+    )
     return jsonify({
         "success": True,
         "message": "Medication event updated successfully",
