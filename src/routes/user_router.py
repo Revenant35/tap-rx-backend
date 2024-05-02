@@ -1,7 +1,8 @@
 from flask import Blueprint, current_app, jsonify, request
 
-from src.controllers.user_controller import get_users, update_user, create_user, get_user
-from src.routes.auth import firebase_auth_required, verify_user
+from src.controllers.user_controller import get_users, update_user, create_user, get_user, delete_user
+from src.models.errors.invalid_request_error import InvalidRequestError
+from src.routes.auth import firebase_auth_required, verify_user, get_user_id
 from src.utils.validators import validate_json
 
 users_bp = Blueprint('users_bp', __name__)
@@ -287,3 +288,26 @@ def handle_update_user(user_id):
             "message": "Failed to update user",
             "error": str(e)
         }), 500
+
+
+@users_bp.route('/<user_id>', methods=['DELETE'])
+@firebase_auth_required
+def handle_delete_user(user_id):
+    requesting_user_id = get_user_id(request)
+    if requesting_user_id != user_id:
+        raise InvalidRequestError("User ID does not match the authorized user's ID")
+
+    try:
+        delete_user(requesting_user_id)
+    except ValueError as ex:
+        current_app.logger.error(f"Error while trying to delete user {user_id}: {ex}")
+        return jsonify({
+            "success": False,
+            "message": "Failed to delete user",
+        }), 500
+
+    return jsonify({
+        "success": True,
+        "message": "User deleted successfully",
+    }), 200
+

@@ -11,7 +11,7 @@ from src.models.User import User
 from src.models.errors.invalid_request_error import InvalidRequestError
 from src.models.errors.resource_not_found_error import ResourceNotFoundError
 from src.utils.constants import GET_MED_EVENTS_FOR_USER_NEXT_TOKEN_DELIMITER, MAX_MEDICATION_EVENTS_PER_PAGE
-from src.utils.pagination import parse_start_tkn
+from src.utils.pagination import parse_start_tkn, create_next_token
 
 
 def get_medication_event(user_id: str, medication_id: str, medication_event_id: str) -> MedicationEvent | None:
@@ -113,8 +113,9 @@ def get_medication_events_for_user(
 
             if len(medication_events) == limit:
                 try:
-                    next_token = create_next_tkn_for_medication_events_for_user(
-                        medication_id, medication_events[-1].timestamp + timedelta(microseconds=-1)
+                    next_token = create_next_token(
+                        [medication_id, medication_events[-1].timestamp + timedelta(microseconds=-1)],
+                        GET_MED_EVENTS_FOR_USER_NEXT_TOKEN_DELIMITER
                     )
                 except ValueError as ex:
                     current_app.logger.error(f"Failed to create next token for medication events: {ex}")
@@ -373,39 +374,3 @@ def delete_medication_event(user_id: str, medication_id: str, medication_event_i
     except FirebaseError as ex:
         current_app.logger.error(f"Failed to delete medication event {medication_event_id}: {ex}")
         raise FirebaseError(500, "Failed to delete medication event")
-
-
-def create_next_tkn_for_medication_events_for_user(medication_id: str, end_at: datetime) -> str:
-    """
-    Creates a token to retrieve the next page of medication events for a user.
-
-    Args:
-        medication_id: (str) The medication's ID.
-        end_at: (datetime) The end date of the last page of medication events.
-
-    Returns:
-        str: The next token.
-    """
-    if medication_id is None or not isinstance(end_at, datetime):
-        raise ValueError("Invalid arguments for creating next token")
-    return f"{medication_id}" \
-           f"{GET_MED_EVENTS_FOR_USER_NEXT_TOKEN_DELIMITER}" \
-           f"{(end_at + timedelta(microseconds=-1)).isoformat()}"
-
-
-def parse_start_tkn_for_medication_events_for_user(start_token: str | None) -> tuple[str | None, datetime | None]:
-    """
-    Parses the start token for retrieving medication events for a user. If the start token is None, returns a tuple
-    with two None values.
-
-    Args:
-        start_token: (str | None) The start token.
-
-    Returns:
-        tuple[str | None, datetime | None]: The medication ID and the end date of the last page of medication events or
-        None for both if the start token is None.
-    """
-    if start_token is None:
-        return None, None
-    medication_id, end_at = start_token.split(GET_MED_EVENTS_FOR_USER_NEXT_TOKEN_DELIMITER)
-    return medication_id, datetime.fromisoformat(end_at)

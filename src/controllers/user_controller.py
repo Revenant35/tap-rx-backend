@@ -167,3 +167,44 @@ def update_user(user_id: str, user_json_dict: dict) -> dict:
         raise ex
 
     return updated_user_data
+
+
+def delete_user(user_id: str) -> None:
+    """
+    Deletes a user and all of their med events
+
+    Args:
+        user_id: (str) Username for user.
+
+    Raises:
+        ValueError, TypeError: If an error occurs while trying to delete the user.
+        exceptions.FirebaseError: If an error occurs while interacting with the database.
+        ResourceNotFoundError: If the user is not found.
+    """
+    from src.controllers.medication_event_controller import get_medication_events_for_user, delete_medication_event
+    try:
+        # checking to make sure user exists
+        User.from_dict(get_user(user_id))
+    except (ValueError, TypeError) as ex:
+        current_app.logger.error(f"Failed to fetch user {user_id}: {ex}")
+        raise ex
+
+    deleting_med_events = True
+    nxt_token = None
+    while deleting_med_events:
+        try:
+            users_med_events, nxt_token = get_medication_events_for_user(user_id, start_token=nxt_token)
+        except ValueError as ex:
+            current_app.logger.error(f"Failed to fetch medication events for user {user_id}: {ex}")
+            raise ex
+        for med_event in users_med_events:
+            delete_medication_event(user_id, med_event.medication_id, med_event.medication_event_id)
+
+        if nxt_token is None:
+            deleting_med_events = False
+
+    try:
+        db.reference(f'/users/{user_id}').delete()
+    except ValueError as ex:
+        current_app.logger.error(f"Error deleting user {user_id}: {ex}")
+
