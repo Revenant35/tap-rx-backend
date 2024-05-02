@@ -2,7 +2,6 @@ from datetime import datetime
 
 from flask import Blueprint, request, jsonify
 
-from src.constants import MAX_MEDICATION_EVENTS_PER_PAGE
 from src.controllers.medication_event_controller import (
     create_medication_event,
     get_medication_event,
@@ -13,6 +12,7 @@ from src.controllers.medication_event_controller import (
 from src.models.errors.invalid_request_error import InvalidRequestError
 from src.models.errors.resource_not_found_error import ResourceNotFoundError
 from src.routes.auth import firebase_auth_required, get_user_id
+from src.utils.constants import MAX_MEDICATION_EVENTS_PER_PAGE
 from src.utils.validators import validate_json
 
 medication_events_bp = Blueprint('medication_events_bp', __name__)

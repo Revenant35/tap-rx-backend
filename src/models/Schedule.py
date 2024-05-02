@@ -61,3 +61,6 @@ class Schedule:
     def to_dict(self):
         schedule_fields = ["minute", "hour", "day_of_month", "month", "day_of_week"]
         return {field: getattr(self, field) for field in schedule_fields}
+
+    def to_cron(self) -> str:
+        return f'{self.minute} {self.hour} {self.day_of_month} {self.month} {self.day_of_week}'

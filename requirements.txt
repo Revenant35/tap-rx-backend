@@ -7,3 +7,5 @@ requests~=2.31.0
 python-dotenv~=1.0.1
 setuptools
 flasgger
+PyYAML~=6.0.1
+croniter~=2.0.5

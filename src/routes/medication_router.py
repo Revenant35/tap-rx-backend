@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from firebase_admin.exceptions import FirebaseError
 from flask import Blueprint, request, jsonify
 
@@ -7,10 +9,12 @@ from src.controllers.medication_controller import (
     update_medication,
     delete_medication,
     get_medications,
+    get_scheduled_medications_for_user,
 )
 from src.models.errors.invalid_request_error import InvalidRequestError
 from src.models.errors.resource_not_found_error import ResourceNotFoundError
 from src.routes.auth import firebase_auth_required, get_user_id
+from src.utils.constants import MAX_MEDICATION_SCHEDULED_TIMES_PER_PAGE
 from src.utils.validators import validate_json
 
 medications_bp = Blueprint("medications_bp", __name__)
@@ -382,3 +386,118 @@ def handle_delete_medication(medication_id):
             jsonify({"success": False, "message": "Failed to delete medication"}),
             500,
         )
+
+
+@medications_bp.route("/schedule/<user_id>", methods=["GET"])
+@firebase_auth_required
+def handle_get_scheduled_medications(user_id):
+    """
+    Retrieves medication events for a medication within a specified time range.
+    ---
+    tags:
+      - medications
+    parameters:
+      - name: user_id
+        in: path
+        required: true
+        description: The user's ID.
+        type: string
+      - name: start_at
+        in: query
+        required: true
+        description: The start date to filter timestamps.
+        type: string
+        format: date-time(iso8601)
+      - name: end_at
+        in: query
+        required: true
+        description: The end date to filter events.
+        type: string
+        format: date-time(iso8601)
+      - name: limit
+        in: query
+        required: false
+        description: The number of events to retrieve. Will default to 250 and cap at 250.
+        type: integer
+      - name: start_token
+        in: query
+        required: false
+        description: The token to start retrieving events from. Will be returned in the response if there are more events to retrieve.
+        type: string
+    responses:
+        200:
+          description: Medication scheduled timestamps retrieved successfully.
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+              message:
+                type: string
+              data:
+                type: array
+                items:
+                  type: object
+                  required:
+                    - timestamp
+                    - medication_id
+                  properties:
+                    timestamp:
+                      type: string
+                      format: date-time(iso8601)
+                      description: The timestamp of the medication's scheduled time.
+                    medication_id:
+                      type: string
+                      description: The medication's ID.
+              next_token:
+                type: string
+        400:
+            description: Invalid request.
+        404:
+            description: User not found.
+        500:
+            description: Internal server error.
+    """
+    requesting_user_id = get_user_id(request)
+    if requesting_user_id is None:
+        raise InvalidRequestError("User ID not included in ID token.")
+    if requesting_user_id != user_id:
+        raise InvalidRequestError("User ID does not match ID token.")
+
+    try:
+        start_at = request.args["start_at"]
+        end_at = request.args["end_at"]
+    except KeyError:
+        raise InvalidRequestError("Required query parameters: start_at, end_at")
+
+    try:
+        start_at_dt = datetime.fromisoformat(start_at)
+        end_at_dt = datetime.fromisoformat(end_at)
+    except ValueError:
+        raise InvalidRequestError("Invalid date format. Please use ISO 8601 format.")
+
+    try:
+        limit = int(request.args.get("limit", MAX_MEDICATION_SCHEDULED_TIMES_PER_PAGE))
+    except ValueError:
+        raise InvalidRequestError("Invalid limit value. Please use an integer value.")
+
+    if not 0 < limit <= MAX_MEDICATION_SCHEDULED_TIMES_PER_PAGE:
+        raise InvalidRequestError(
+            f"Invalid limit value. "
+            f"Please use a positive integer value that is less than or equal to {MAX_MEDICATION_SCHEDULED_TIMES_PER_PAGE}."
+        )
+
+    timestamps, nxt_token = get_scheduled_medications_for_user(
+        user_id=user_id,
+        start_at=start_at_dt,
+        end_at=end_at_dt,
+        limit=limit,
+        start_token=request.args.get("next_token"),
+    )
+
+    return jsonify({
+        "success": True,
+        "message": "Medication scheduled timestamps retrieved successfully",
+        "data": timestamps,
+        "next_token": nxt_token
+    }), 200
