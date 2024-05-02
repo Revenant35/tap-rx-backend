@@ -4,13 +4,14 @@ from firebase_admin import db
 from firebase_admin.exceptions import FirebaseError
 from flask import current_app
 
-from src.constants import GET_MED_EVENTS_FOR_USER_NEXT_TOKEN_DELIMITER, MAX_MEDICATION_EVENTS_PER_PAGE
 from src.controllers.medication_controller import get_medication
 from src.controllers.user_controller import get_user
 from src.models.MedicationEvent import MedicationEvent
 from src.models.User import User
 from src.models.errors.invalid_request_error import InvalidRequestError
 from src.models.errors.resource_not_found_error import ResourceNotFoundError
+from src.utils.constants import GET_MED_EVENTS_FOR_USER_NEXT_TOKEN_DELIMITER, MAX_MEDICATION_EVENTS_PER_PAGE
+from src.utils.pagination import parse_start_tkn
 
 
 def get_medication_event(user_id: str, medication_id: str, medication_event_id: str) -> MedicationEvent | None:
@@ -91,7 +92,7 @@ def get_medication_events_for_user(
     medication_ids = list(user.medications.keys())
     medication_ids.sort()
     medication_events = []
-    start_token_medication_id, start_token_end_at = parse_start_tkn_for_medication_events_for_user(start_token)
+    start_token_medication_id, start_token_end_at = parse_start_tkn(start_token, GET_MED_EVENTS_FOR_USER_NEXT_TOKEN_DELIMITER, 2)
 
     for medication_id in medication_ids:
         if start_token_medication_id is None or medication_id >= start_token_medication_id:

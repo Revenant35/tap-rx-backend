@@ -1,11 +1,21 @@
-from firebase_admin import db
-from flask import current_app
-from firebase_admin.exceptions import FirebaseError
+from datetime import datetime, timedelta
 
+from croniter import croniter_range
+from firebase_admin import db
+from firebase_admin.exceptions import FirebaseError
+from flask import current_app
+
+from src.controllers.user_controller import get_user
 from src.models.Medication import Medication
 from src.models.Schedule import Schedule
+from src.models.User import User
 from src.models.errors.invalid_request_error import InvalidRequestError
 from src.models.errors.resource_not_found_error import ResourceNotFoundError
+from src.utils.constants import (
+    MAX_MEDICATION_SCHEDULED_TIMES_PER_PAGE,
+    GET_MED_SCHEDULED_TIMES_DELIMITER
+)
+from src.utils.pagination import parse_start_tkn, create_next_token
 
 
 def get_medication(user_id: str, medication_id: str) -> Medication or None:
@@ -269,3 +279,65 @@ def delete_medication(user_id: str, medication_id: str):
             f"Firebase failure while trying to delete medication {medication_id}: {ex}"
         )
         raise ex
+
+
+def get_scheduled_medications_for_user(
+        user_id: str,
+        start_at: datetime,
+        end_at: datetime,
+        limit: int = MAX_MEDICATION_SCHEDULED_TIMES_PER_PAGE,
+        start_token: str = None
+) -> tuple[list[tuple[datetime, str]], str | None]:
+    """
+    Retrieves scheduled medication times for a user within a given time range.
+
+    Args:
+        user_id: (str) UID for the user.
+        start_at: (datetime) Start of the time range.
+        end_at: (datetime) End of the time range.
+        limit: (int) Maximum number of scheduled times to retrieve. Optional.
+        start_token: (str) Token to start retrieving scheduled times from. Optional.
+
+    Returns:
+        tuple: A list of tuples including the timestamp and medication id, and the next token to use for pagination.
+
+    Raises:
+        FirebaseError: If an error occurs while interacting with the database.
+        ResourceNotFoundError: If the user does not exist.
+    """
+    try:
+        medications = User.from_dict(get_user(user_id)).medications
+    except (ValueError, TypeError):
+        current_app.logger.error(f"Error while trying to retrieve user {user_id}")
+        raise FirebaseError(500, "Internal server error")
+
+    medication_ids = list(medications.keys())
+    medication_ids.sort()
+    scheduled_timestamps = []
+    start_tkn_medication_id, start_tkn_start_at = parse_start_tkn(start_token, GET_MED_SCHEDULED_TIMES_DELIMITER, 2)
+    start_tkn_start_at = datetime.fromisoformat(start_tkn_start_at) if start_tkn_start_at else None
+    nxt_tkn = None
+
+    for medication_id in medication_ids:
+        if medications[medication_id].schedule and (not start_tkn_medication_id or start_tkn_medication_id <= medication_id):
+            tmp_start_at = start_at
+            if start_tkn_start_at and medication_id == start_tkn_medication_id:
+                tmp_start_at = start_tkn_start_at
+            new_dts = croniter_range(tmp_start_at, end_at, medications[medication_id].schedule.to_cron())
+            for dt in new_dts:
+                dt = dt.isoformat()
+                scheduled_timestamps.append((dt, medication_id))
+            if len(scheduled_timestamps) >= limit:
+                scheduled_timestamps = scheduled_timestamps[:limit]
+                nxt_tkn = create_next_token(
+                    [
+                        medication_id,
+                        (datetime.fromisoformat(scheduled_timestamps[-1][0]) + timedelta(microseconds=1)).isoformat()
+                    ],
+                    GET_MED_SCHEDULED_TIMES_DELIMITER
+                )
+                break
+
+    return scheduled_timestamps, nxt_tkn
+
+
